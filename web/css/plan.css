@@ -1,0 +1,158 @@
+/* Planificador de líneas y cuadrículas. Solo usa tokens de style.css (claro, oscuro y sol).
+   .grid2 y .pair también los usan otros formularios (editor, ajustes): su forma no cambia aquí;
+   los ajustes propios del planificador van dentro de .plan. */
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 10px; }
+.grid2 .field span { font-size: 0.8125rem; }
+.grid2 .field { margin: 8px 0; }
+.pair { display: flex; gap: 6px; }
+.pair input { min-width: 0; flex: 1; }
+
+/* ------------------------------------------------------------------ pasos del panel */
+.sheet-body:has(> .plan) { padding-bottom: 0; } /* el pie fijo llega hasta el borde */
+.sheet:has(.plan) .sheet-head h2 { white-space: normal; line-height: 1.2; padding: 6px 0; } /* título largo (FR/PT) en dos líneas, sin cortarlo */
+:root[data-theme='sun'] .plan .btn.tonal { border-color: var(--outline); } /* al sol, el botón tonal es blanco: necesita borde */
+.pl-h { display: flex; align-items: center; gap: 10px; margin: 24px 0 10px; font-size: 1.0625rem; font-weight: 800; color: var(--on-surface); }
+.plan > .pl-h:first-child { margin-top: 10px; }
+.pl-n {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--primary); color: var(--on-primary); font-size: 0.875rem; font-weight: 800;
+}
+.pl-hint { margin: 6px 0 0; color: var(--muted); font-size: 0.875rem; line-height: 1.4; }
+.pl-sub { margin: 14px 0 8px; font-weight: 700; font-size: 0.9375rem; }
+.plan .field small.hint { font-size: 0.875rem; line-height: 1.35; }
+.plan .field label { color: var(--on-surface); }
+
+/* Paso 1: área */
+.pl-area {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 12px 14px; margin: 0 0 4px;
+  border-radius: var(--r-md); border: var(--border-w) solid var(--divider); background: var(--surface-2); color: var(--on-surface);
+}
+.pl-area b { font-size: 1.375rem; font-weight: 800; }
+.pl-area span { color: var(--muted); font-size: 0.9375rem; min-width: 0; overflow-wrap: anywhere; }
+.pl-src { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 10px 0 0; }
+.pl-src .btn { min-height: 56px; padding: 0 12px; }
+
+/* Tarjetas de selección única (tipo de plan, reparto de puntos, formato de exportación) */
+.pl-opts { display: flex; flex-direction: column; gap: 8px; }
+.pl-opt {
+  position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px; cursor: pointer;
+  border-radius: var(--r-md); border: var(--border-w) solid var(--outline); background: var(--surface); color: var(--on-surface);
+  transition: background-color 0.15s ease, transform 0.08s ease;
+}
+.pl-opt:active { transform: scale(0.98); }
+.pl-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.pl-opt.on, .pl-opt:has(input:checked) {
+  border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); background: var(--primary-container); color: var(--on-primary-container);
+}
+.pl-opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pl-pic { flex: none; width: 52px; height: 36px; color: var(--primary); }
+.pl-opt.on .pl-pic, .pl-opt:has(input:checked) .pl-pic { color: inherit; }
+.pl-pic svg { display: block; width: 100%; height: 100%; }
+.pl-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pl-txt b { font-size: 1rem; line-height: 1.25; overflow-wrap: anywhere; }
+.pl-txt small { font-size: 0.875rem; line-height: 1.35; color: var(--muted); }
+.pl-opt.on .pl-txt small, .pl-opt:has(input:checked) .pl-txt small { color: inherit; }
+/* Marca de elegido: forma (círculo con ✓), no solo color */
+.pl-check {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--outline); display: grid; place-items: center;
+}
+.pl-check .ic { width: 18px; height: 18px; visibility: hidden; }
+.pl-opt.on .pl-check, .pl-opt:has(input:checked) .pl-check { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.pl-opt.on .pl-check .ic, .pl-opt:has(input:checked) .pl-check .ic { visibility: visible; }
+
+/* ------------------------------------------------------------------ paso 3: medidas */
+.res-box {
+  border: 2px solid var(--primary); border-radius: var(--r-lg); padding: 12px 14px; margin: 0 0 12px;
+  background: var(--primary-container); color: var(--on-primary-container);
+}
+.res-title { display: block; font-weight: 800; font-size: 1rem; margin-bottom: 8px; color: inherit; }
+.res-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 8px; }
+.res-in { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.res-in label { font-weight: 700; font-size: 0.9375rem; line-height: 1.25; color: inherit; }
+.res-box input[type='text'] {
+  width: 100%; min-width: 0; min-height: 56px; padding: 0 8px; border-radius: var(--r-sm); border: var(--border-w) solid var(--outline);
+  background: var(--surface); color: var(--on-surface); font-size: 1.375rem; font-weight: 800; text-align: center;
+}
+.res-box input[type='text']:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+.res-x { font-size: 1.5rem; font-weight: 800; padding-bottom: 12px; }
+.res-hint { margin: 8px 0 0; font-size: 0.875rem; line-height: 1.4; color: inherit; }
+.res-one + .chips, .res-one + .switch { margin-top: 10px; }
+.res-box .switch { color: inherit; }
+.res-box .switch small { color: inherit; }
+.res-box .res-one + .res-one, .res-box .switch + .res-one { margin-top: 10px; }
+
+/* Medidas rápidas: 48 px de alto, la elegida con ✓ además del color */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; min-width: 56px; padding: 0 14px;
+  border-radius: 24px; border: var(--border-w) solid var(--outline); background: var(--surface); color: var(--on-surface);
+  font-weight: 700; font-size: 0.9375rem; white-space: nowrap;
+}
+.chip-btn .ic { width: 18px; height: 18px; }
+.chip-btn.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+html.gloves .chip-btn { min-height: 56px; }
+
+/* Valores que no se pudieron usar: borde grueso + aviso con ⚠ (no solo color) */
+.plan input[aria-invalid='true'] { border: 2px solid var(--danger); box-shadow: 0 0 0 2px var(--danger-container); }
+.pl-err {
+  display: block; margin-top: 6px; padding: 6px 10px; border-radius: var(--r-sm); font-size: 0.875rem; font-weight: 700; line-height: 1.35;
+  background: var(--danger-container); color: var(--on-danger-container); border: var(--border-w) solid var(--danger);
+}
+.pl-err::before { content: '⚠ '; }
+.pl-err[hidden] { display: none; }
+
+/* ------------------------------------------------------------------ paso 4: dirección e inicio */
+.plan .seg button { min-height: 48px; font-size: 0.9375rem; padding: 0 8px; }
+html.gloves .plan .seg button { min-height: 56px; }
+.pl-dir { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.pl-dir .field { margin: 8px 0 0; }
+.pl-dir .btn { min-height: 48px; margin-bottom: 0; }
+.pl-now { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-weight: 700; color: var(--on-surface); }
+.pl-now:empty { display: none; }
+.pl-now .ic { color: var(--primary); }
+
+/* Resumen */
+.pl-stats .kv th { width: 44%; }
+.pl-stats .kv td small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.875rem; }
+.pl-stats .note { margin: 8px 0; }
+
+/* Secciones plegables: «Más opciones» y la calculadora para dron */
+.plan details.pl-more { border: var(--border-w) solid var(--divider); border-radius: var(--r-md); padding: 0 14px; margin: 12px 0; background: var(--surface-2); }
+.plan details.pl-more[open] { padding-bottom: 12px; }
+.plan details.pl-more > summary {
+  list-style: none; display: flex; align-items: center; gap: 10px; min-height: 56px; font-weight: 700; font-size: 1rem; cursor: pointer;
+}
+.plan details.pl-more > summary::-webkit-details-marker { display: none; }
+.plan details.pl-more > summary .ic { color: var(--primary); }
+.plan details.pl-more > summary span { flex: 1; min-width: 0; }
+.plan details.pl-more > summary::after {
+  content: ''; flex: none; width: 10px; height: 10px; margin: 0 4px 4px 0; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg); transition: transform 0.15s ease;
+}
+.plan details.pl-more[open] > summary::after { transform: rotate(-135deg); margin-bottom: -4px; }
+.plan .grid2 { align-items: end; }
+.plan .grid2 .field label { font-size: 0.875rem; line-height: 1.25; }
+.plan .grid2 .field input { min-height: 48px; }
+
+/* ------------------------------------------------------------------ pie fijo: estado + guardar */
+.pl-foot {
+  position: sticky; bottom: 0; z-index: 2; margin: 16px -18px 0; padding: 10px 18px 14px;
+  background: var(--surface); border-top: var(--border-w) solid var(--divider);
+}
+.pl-sum { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 8px; font-weight: 700; font-size: 1rem; line-height: 1.35; }
+.pl-sum .ic { width: 20px; height: 20px; margin-top: 1px; }
+.pl-sum.bad { padding: 8px 10px; border-radius: var(--r-sm); background: var(--danger-container); color: var(--on-danger-container); }
+.pl-sum.ok { padding: 8px 10px; border-radius: var(--r-sm); background: var(--ok-bg); color: var(--ok-fg); }
+.pl-sum.info { color: var(--muted); font-weight: 600; }
+:root[data-theme='sun'] .pl-sum.bad, :root[data-theme='sun'] .pl-sum.ok { border: var(--border-w) solid currentColor; }
+.pl-foot-btns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 8px; }
+.pl-foot-btns .btn { min-height: 56px; padding: 0 10px; }
+@media (max-width: 379px) { .pl-foot-btns .btn .ic { display: none; } }
+
+/* ------------------------------------------------------------------ barra al dibujar el área */
+body.plan-drawing #measureTxt { margin-bottom: 10px; }
+body.plan-drawing #measureTxt .pd-line { display: block; color: var(--hud-fg); font-weight: 600; }
+body.plan-drawing #measureTxt .pd-status { display: block; margin-top: 4px; color: var(--hud-accent); font-weight: 800; }
+body.plan-drawing .mb-actions .btn { min-height: 56px; padding: 0 8px; }
+body.plan-drawing .mb-actions #mDone { flex-grow: 1.4; }
+html.gloves body.plan-drawing .mb-actions .btn { min-height: 60px; }

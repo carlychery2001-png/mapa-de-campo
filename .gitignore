@@ -1,0 +1,19 @@
+# Nunca subir: clave de firma y su contraseña
+android/keystore/
+keystore.properties
+*.jks
+# Generados al compilar
+web/node_modules/
+android/assets/www/
+build/
+dist/
+*.apk
+*.idsig
+web/.check/
+# Ortofotos de EARTH (van dentro del APK publicado, no en el repositorio)
+android/assets/bundled/*.tif
+# Datos de prueba grandes y notas internas
+test_data/*
+docs/NOTAS_1.5_CAMBIOS.md
+docs/PENDIENTE_1.5.md
+!test_data/prueba_PixelIsPoint_UTM17N.tif

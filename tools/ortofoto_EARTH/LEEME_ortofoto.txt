@@ -1,0 +1,50 @@
+ORTOFOTOS DE LA UNIVERSIDAD EARTH (IGN) - SIN CONEXIÓN
+======================================================
+
+Hay dos archivos:
+1. ortofoto_EARTH_IGN_2015_05m.tif  - toda la universidad, 0,5 m (detalle abajo)
+2. ortofoto_campus_EARTH_IGN_012m.tif - núcleo del campus, ~0,12 m (sección «Núcleo del campus»)
+
+Archivo: ortofoto_EARTH_IGN_2015_05m.tif  (29.9 MB)
+- GeoTIFF optimizado (COG), EPSG:3857 (WGS 84 / Pseudo-Mercator), 15 104 x 14 080 píxeles.
+- 0,597 m por píxel en la proyección (≈ 0,59 m sobre el terreno en EARTH). La ortofoto original es de 0,5 m.
+- Compresión JPEG (calidad 85), pirámides 2-32 y máscara interna: fuera del límite es transparente.
+- Cubre toda la Universidad EARTH (3156 ha), recortada al límite de OpenStreetMap (vía 321376631).
+- Fotos de febrero de 2015: caminos, edificios y cultivos pueden haber cambiado.
+
+Fuente y licencia
+- Ortofoto 1:5000 2014-2017 © Registro Nacional – Instituto Geográfico Nacional (IGN), Costa Rica,
+  servicio WMTS del SNIT (geos1.snitcr.go.cr/Ortofoto2017, capa ortofoto2017_5000_altaresolucion).
+- Metadatos del IGN: «Su uso tendrá carácter libre y gratuito, siempre que se mencione el origen y
+  propiedad de los datos». Al usarla, cite: «Ortofoto 1:5000 2014-2017 © Registro Nacional – IGN Costa
+  Rica, vía SNIT».
+- El texto de la licencia no menciona la redistribución dentro de una app. Para publicar la app en una
+  tienda, conviene pedir confirmación por escrito al IGN (SecretariaIGN@rnp.go.cr).
+- Límite: © OpenStreetMap contributors, ODbL (limite_Universidad_EARTH_OSM.geojson).
+
+Cómo se hizo (5 de noviembre de 2026)
+1. descargar_teselas.py: 1563 teselas del zoom 18 que tocan el límite, una por una con pausa.
+2. crear_geotiff.py: mosaico en la rejilla exacta de las teselas, recorte al límite, COG JPEG.
+
+Uso
+- En la app Mapa de Campo 1.4: las dos vienen incluidas y se instalan solas la primera vez; la de 0,12 m
+  se dibuja encima de la de 0,5 m. Si quita una, Capas → «Agregar … de EARTH incluida» la recupera.
+- En QGIS: arrastre el .tif al mapa. Para medir en metros reales, trabaje en CRTM05 (EPSG:8908);
+  QGIS reproyecta al vuelo.
+
+NÚCLEO DEL CAMPUS (IGN 1:1000, ~0,12 m)
+---------------------------------------
+Archivo: ortofoto_campus_EARTH_IGN_012m.tif  (32.2 MB)
+- GeoTIFF optimizado (COG), EPSG:3857, 9984 x 15 360 píxeles, 0,149 m por píxel en la proyección
+  (≈ 0,147 m sobre el terreno en EARTH). La ortofoto original del IGN es de ~0,12 m.
+- Compresión JPEG (calidad 85), pirámides 2-32 y máscara interna: fuera del polígono es transparente.
+- Cubre 207 ha: edificios, residencias, canchas y parcelas cercanas (nucleo_campus_EARTH.geojson).
+  El polígono es propio: techos de la ortofoto de 0,5 m agrupados, envolvente + 120 m, recortado al
+  límite de la universidad y a la zona que el IGN cubre a escala 1:1000.
+- Ortofoto 1:1000 2015-2018 © Registro Nacional – IGN Costa Rica, servicio WMTS del SNIT (zoom 20).
+  Misma licencia y cita que arriba, con «Ortofoto 1:1000 2015-2018».
+- Comprobación: el polígono de la cancha de OpenStreetMap coincide con los bordes de la cancha en la
+  imagen a 1-2 píxeles (≈ 0,2-0,3 m).
+- Cómo se hizo: cobertura_1k.py (zona cubierta a 1:1000), descargar_teselas_1k.py (1579 teselas del
+  zoom 20, 0 fallidas) y crear_geotiff.py --tiles tiles_1k_z20.json --carpeta teselas_1k
+  --poligono nucleo_campus_EARTH.geojson --salida ortofoto_campus_EARTH_IGN_012m.tif.

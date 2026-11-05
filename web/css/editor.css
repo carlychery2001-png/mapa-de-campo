@@ -1,0 +1,82 @@
+/* Editor de capas (barra de edición y fichas). Solo usa tokens de style.css.
+   Al editar no hay barra inferior ni de coordenadas: la barra de edición va abajo del todo y
+   «Mi ubicación» queda justo encima (main.js calcula --bottom-ui).
+   Arriba, siempre a la vista: Deshacer · capa y estado del guardado · Más · Listo.
+   En medio: qué tocar ahora (o lo que se acaba de hacer). Abajo: 2 a 4 herramientas del momento
+   en una rejilla que reparte el ancho; nunca se desplaza de lado (con letra grande pasa a dos filas).
+   Medido para 320 px de ancho y etiquetas un 30 % más largas (francés, portugués). */
+.edit-bar {
+  position: absolute; left: 4px; right: 4px; bottom: calc(8px + var(--safe-b)); z-index: 18;
+  display: flex; flex-direction: column; gap: 5px; padding: 4px;
+  background: var(--surface); color: var(--on-surface); border-radius: var(--r-lg); box-shadow: var(--shadow-3);
+  border: var(--border-w) solid transparent;
+}
+:root[data-theme='sun'] .edit-bar { border-color: var(--outline); }
+body.navigating .edit-bar { bottom: calc(var(--nav-h, 290px) + 20px); }
+@media (min-width: 700px) { .edit-bar { left: 50%; right: auto; width: 560px; transform: translateX(-50%); } }
+
+/* Fila de arriba: acciones fijas a los lados y el nombre de la capa en medio (se corta con «…») */
+.eb-top { display: flex; align-items: stretch; gap: 4px; min-width: 0; }
+.eb-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 2px; line-height: 1.25; }
+.eb-name, .eb-sub { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eb-name { font-size: 0.9375rem; font-weight: 800; }
+.eb-sub { font-size: 0.8125rem; color: var(--muted); }
+.eb-save { font-weight: 700; }
+.eb-save .ic { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-inline-end: 3px; }
+.eb-save.bad { color: var(--danger); }
+
+/* Qué tocar ahora: texto grande y oscuro (se lee al sol); el aviso de lo último que se hizo, invertido */
+.eb-hint {
+  font-size: 0.9375rem; line-height: 1.3; color: var(--on-surface); background: var(--surface-2);
+  border-radius: var(--r-sm); padding: 6px 10px; min-height: calc(1.3em + 12px); overflow-wrap: anywhere;
+}
+.eb-hint b { font-weight: 800; }
+.eb-hint.snack { background: var(--inverse-surface); color: var(--inverse-on-surface); font-weight: 700; }
+.eb-prog { display: block; height: 6px; margin-top: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.eb-prog i { display: block; height: 100%; background: var(--primary); transition: width 0.25s linear; }
+
+/* Herramientas del momento */
+.eb-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 3.75rem), 1fr)); gap: 4px; }
+.eb-tools:empty { display: none; }
+
+/* Botones: 56 px de alto como mínimo (con guantes), icono arriba y etiqueta en hasta dos líneas */
+.eb-btn {
+  position: relative; min-width: 0; min-height: 56px; padding: 7px 2px; border-radius: var(--r-md);
+  border: var(--border-w) solid var(--outline); background: var(--surface); color: var(--on-surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 0.8125rem; font-weight: 700; line-height: 1.15; text-align: center;
+}
+.eb-btn .ic { width: 24px; height: 24px; }
+.eb-lbl {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%;
+  letter-spacing: -0.2px; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: anywhere;
+}
+/* Herramienta activa: fondo, borde doble y una barra abajo (no depende solo del color) */
+.eb-btn.on { background: var(--primary-container); color: var(--on-primary-container); border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
+.eb-btn.on { padding-bottom: 10px; }
+.eb-btn.on::after { content: ''; position: absolute; left: 28%; right: 28%; bottom: 3px; height: 3px; border-radius: 2px; background: var(--primary); }
+.eb-btn.go, .eb-btn.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.eb-btn.danger { background: var(--danger-container); color: var(--on-danger-container); border-color: var(--danger); }
+/* Todavía no se puede: borde punteado y texto atenuado; al tocarlo explica por qué */
+.eb-btn[aria-disabled='true'] { background: var(--surface-2); color: var(--muted); border-color: var(--outline); border-style: dashed; box-shadow: none; }
+.eb-btn[aria-disabled='true'] .ic { opacity: 0.6; }
+
+/* Acciones fijas de arriba */
+.eb-pin { flex: 0 0 auto; min-width: 3.25rem; max-width: 5.75rem; padding-inline: 6px; }
+.eb-pin.primary { min-width: 4rem; }
+/* «Deshacer» resaltado justo después de borrar o cambiar algo */
+.eb-pin.pulse { box-shadow: 0 0 0 3px var(--focus); animation: eb-pulse 1s ease-in-out 3; }
+@keyframes eb-pulse { 50% { box-shadow: 0 0 0 6px var(--focus); } }
+
+/* Fichas del editor */
+.eb-grow { flex: 1 1 auto; min-width: 0; }
+.eb-grow b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eb-key { display: inline; margin-inline-start: 8px; font-weight: 400; color: var(--muted); font-size: 0.8125rem; }
+.eb-err { color: var(--danger); font-weight: 700; font-size: 0.875rem; }
+.field [aria-invalid='true'] { border-color: var(--danger); box-shadow: 0 0 0 2px var(--danger-container); }
+.choice .list-row .ic { width: 28px; height: 28px; }
+.choice .list-row.on .ic { color: var(--on-primary-container); }
+/* Colores de capa: el elegido lleva una marca (no solo el contorno) */
+.eb-sw { display: grid; place-items: center; }
+.eb-sw .ic { width: 22px; height: 22px; color: var(--surface); opacity: 0; filter: drop-shadow(0 0 1.5px var(--on-surface)) drop-shadow(0 0 1px var(--on-surface)); }
+.eb-sw.on .ic { opacity: 1; }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Recursos por defecto en inglés: se usan con cualquier idioma del teléfono que la app no tenga. -->
+    <string name="app_name" translatable="false">Mapa de Campo</string>
+    <string name="track_channel">Track recording</string>
+    <string name="track_recording">Recording track</string>
+    <string name="track_waiting">Waiting for GPS signal…</string>
+    <string name="toast_render_gone">The map restarted because the phone ran low on memory.</string>
+    <string name="toast_no_picker">No file picker is available on this phone.</string>
+    <string name="toast_link">Couldn’t open the link.</string>
+    <string name="err_bad_name">Invalid file name.</string>
+    <string name="err_space_need">Not enough storage: %1$d MB of free space is needed (%2$d MB available).</string>
+    <string name="err_save">Couldn’t save “%1$s”.</string>
+    <string name="err_space_for">Not enough storage for “%1$s”.</string>
+    <string name="err_open">Couldn’t open “%1$s”.</string>
+    <string name="err_format">“%1$s”: unsupported format. Use GeoTIFF, GeoJSON, KML/KMZ, GPX, CSV or a QGIS connections XML file.</string>
+    <string name="err_cancelled">cancelled</string>
+    <string name="err_write">the file could not be written</string>
+    <plurals name="track_points">
+        <item quantity="one">%1$d point · %2$s</item>
+        <item quantity="other">%1$d points · %2$s</item>
+    </plurals>
+</resources>

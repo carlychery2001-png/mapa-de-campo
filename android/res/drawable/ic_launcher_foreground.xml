@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono propio dibujado a mano: ruta en serpentina con un marcador de posición. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="3.2" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M34,74 L34,40 L44,40 L44,74 L54,74 L54,40 L64,40 L64,58" />
+    <path android:fillColor="#FFFFEB3B"
+        android:pathData="M70,30 C61.2,30 54,37.2 54,46 C54,57.6 70,74 70,74 C70,74 86,57.6 86,46 C86,37.2 78.8,30 70,30 Z" />
+    <path android:fillColor="#FF00313B"
+        android:pathData="M70,40 C73.3,40 76,42.7 76,46 C76,49.3 73.3,52 70,52 C66.7,52 64,49.3 64,46 C64,42.7 66.7,40 70,40 Z" />
+</vector>

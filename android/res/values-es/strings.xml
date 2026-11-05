@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="track_channel">Grabación del recorrido</string>
+    <string name="track_recording">Grabando el recorrido</string>
+    <string name="track_waiting">Esperando la señal GPS…</string>
+    <string name="toast_render_gone">El mapa se reinició por falta de memoria.</string>
+    <string name="toast_no_picker">Este teléfono no tiene un selector de archivos.</string>
+    <string name="toast_link">No se pudo abrir el enlace.</string>
+    <string name="err_bad_name">Nombre de archivo no válido.</string>
+    <string name="err_space_need">Espacio insuficiente: se necesitan %1$d MB libres (hay %2$d MB).</string>
+    <string name="err_save">No se pudo guardar «%1$s».</string>
+    <string name="err_space_for">No hay espacio suficiente para «%1$s».</string>
+    <string name="err_open">No se pudo abrir «%1$s».</string>
+    <string name="err_format">«%1$s»: formato no compatible. Use GeoTIFF, GeoJSON, KML/KMZ, GPX, CSV o un XML de conexiones de QGIS.</string>
+    <string name="err_cancelled">cancelado</string>
+    <string name="err_write">no se pudo escribir el archivo</string>
+    <plurals name="track_points">
+        <item quantity="one">%1$d punto · %2$s</item>
+        <item quantity="other">%1$d puntos · %2$s</item>
+        <item quantity="many">%1$d puntos · %2$s</item>
+    </plurals>
+</resources>

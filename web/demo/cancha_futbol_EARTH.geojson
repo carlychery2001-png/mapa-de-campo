@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "cancha_futbol_EARTH",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "nombre": "Cancha de futbol - Universidad EARTH", "osm_way": 1029347440, "area_m2": 10231.7, "perimetro_m": 424.9, "largo_m": 138.7, "ancho_m": 73.8, "rumbo_deg": 2.6, "centro_lat": 10.2154639, "centro_lon": -83.5926337, "vertices": 4 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -83.5929464, 10.2161022 ], [ -83.5922739, 10.2160777 ], [ -83.592321, 10.2148255 ], [ -83.5929935, 10.21485 ], [ -83.5929464, 10.2161022 ] ] ] } }
+]
+}

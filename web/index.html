@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es" data-theme="light" class="booting">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://appassets.androidplatform.net; img-src 'self' data: blob: https:; connect-src 'self' https://appassets.androidplatform.net https://tile.openstreetmap.org https://tile.googleapis.com blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:">
+  <title>Mapa de Campo</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="map" data-i18n-aria="Mapa" aria-label="Mapa"></div>
+  <div id="crosshair" aria-hidden="true"></div>
+
+  <!-- Barra superior: menú, título (solo en pantallas anchas) y estado del GPS -->
+  <header id="topbar">
+    <button id="btnMenu" class="icon-btn" data-i18n-aria="Menú" aria-label="Menú"></button>
+    <div class="title" data-i18n="Mapa de Campo">Mapa de Campo</div>
+    <span id="recPill" class="rec-pill" hidden></span>
+    <button id="gpsChip" class="chip q-none" data-i18n-aria="Estado del GPS" aria-label="Estado del GPS"><i class="q-bars" aria-hidden="true"><b></b><b></b><b></b></i><span data-i18n="Buscando GPS…">Buscando GPS…</span></button>
+  </header>
+
+  <!-- Controles del mapa: norte (solo si el mapa está girado) y zoom -->
+  <div class="map-ctrls">
+    <button id="north" class="map-btn north" data-i18n-aria="Orientar al norte" aria-label="Orientar al norte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l5 9H7z" fill="#d32f2f"/><path d="M12 21l-5-9h10z" fill="currentColor" opacity=".45"/></svg><span class="north-n">N</span></button>
+    <div id="zoomBtns" class="zoom-btns">
+      <button id="zoomIn" class="map-btn" data-i18n-aria="Acercar" aria-label="Acercar"></button>
+      <button id="zoomOut" class="map-btn" data-i18n-aria="Alejar" aria-label="Alejar"></button>
+    </div>
+  </div>
+
+  <!-- Botón flotante: mi ubicación (seguir / brújula) -->
+  <div id="fabs">
+    <span id="locateState" class="fab-state" hidden></span>
+    <button id="btnLocate" class="fab main" data-i18n-aria="Mi ubicación" aria-label="Mi ubicación"></button>
+  </div>
+
+  <!-- Aviso flotante para empezar (sin mapas propios) -->
+  <section id="startCard" class="start-card" hidden></section>
+
+  <!-- Coordenadas de mi posición (toque para cambiar el formato) -->
+  <button id="coordBar" class="coord-bar" data-i18n-aria="Coordenadas de mi posición" aria-label="Coordenadas de mi posición">
+    <span class="cb-main" data-i18n="Sin posición">Sin posición</span>
+    <span class="cb-sub"></span>
+  </button>
+
+  <!-- Barra inferior con las herramientas principales (solo en el modo normal) -->
+  <nav id="dock" class="dock" data-i18n-aria="Herramientas principales" aria-label="Herramientas principales">
+    <button id="btnLayers" class="dock-btn"><span class="dock-ic"></span><span class="dock-lbl" data-i18n="Capas">Capas</span></button>
+    <button id="btnMark" class="dock-btn"><span class="dock-ic"></span><span class="dock-lbl" data-i18n="Marcar">Marcar</span></button>
+    <button id="btnTrack" class="dock-btn"><span class="dock-ic"></span><span class="dock-lbl" data-i18n="Grabar">Grabar</span></button>
+    <button id="btnMeasure" class="dock-btn"><span class="dock-ic"></span><span class="dock-lbl" data-i18n="Medir">Medir</span></button>
+    <button id="btnEdit" class="dock-btn"><span class="dock-ic"></span><span class="dock-lbl" data-i18n="Editar">Editar</span></button>
+  </nav>
+
+  <!-- Barra de medir y de dibujar un área (planificador) -->
+  <div id="measureBar" class="measure-bar" hidden>
+    <span id="measureTxt"></span>
+    <div class="mb-actions">
+      <button id="mUndo" class="btn" data-i18n="Deshacer">Deshacer</button>
+      <button id="mClose" class="btn" data-i18n="Cancelar">Cancelar</button>
+      <button id="mDone" class="btn primary" data-i18n="Listo">Listo</button>
+    </div>
+  </div>
+
+  <section id="editBar" class="edit-bar" hidden data-i18n-aria="Herramientas de edición" aria-label="Herramientas de edición"></section>
+
+  <section id="navCard" class="nav-card" hidden aria-live="polite"></section>
+
+  <div id="progress" class="progress" hidden><span></span><div class="bar"><i></i></div></div>
+  <aside id="sheet" class="sheet" aria-hidden="true"></aside>
+  <div id="toast" class="toast" role="status"></div>
+  <input type="file" id="fileInput" multiple accept=".tif,.tiff,.geojson,.json,.kml,.kmz,.gpx,.csv,.txt,.xml" hidden>
+
+  <script src="app.js"></script>
+</body>
+</html>
