@@ -269,12 +269,23 @@ const RE = {
   e: /^(x|e|este|est|leste|easting|east|coord_?x|x_coord|(este|est|leste|easting|e|x)_.*)$/,
   n: /^(y|n|norte|nord|northing|north|coord_?y|y_coord|(norte|nord|northing|n|y)_.*)$/,
   z: /^(z|h|alt|altura|altitud|altitude|elev|elevation|elevacion|elevacao|height|hauteur|cota|(z|h|alt|altura|altitud|altitude|elev|elevation|elevacion|elevacao|height|hauteur|cota)_.*)$/,
-  name: /^(nombre|name|nom|nome|punto|point|ponto|pt|id|label|etiqueta|etiquette|rotulo|codigo_punto|(nombre|name|nom|nome)_.*)$/,
+  // Columna del nombre, por prioridad y no por orden: un nombre de verdad, luego el número de punto
+  // y, solo si no hay otra, «id» (QGIS y las hojas de cálculo suelen poner «id» primero)
+  name: /^(nombre|name|nom|nome|label|etiqueta|etiquette|rotulo)(_.*)?$/,
+  point: /^(punto|point|ponto|pt|codigo_punto)$/,
+  id: /^id$/,
   code: /^(code|codigo|cod|desc|descripcion|description|descricao|nota|notas|note|notes|comment|comments|comentario|commentaire|remarque|obs|observacion|observacao|linea|line|ligne|linha)$/,
 };
 
 /** Rango típico de un Este en proyecciones TM/UTM (falso este 500 000 m). */
 const isEasting = (v) => v > 100000 && v < 900000;
+
+/** Dos valores que el lector sin encabezado toma por latitud y longitud (en un orden u otro). */
+const looksGeo = (va, vb) => {
+  const a = Math.abs(va), b = Math.abs(vb);
+  const anyInt = Number.isInteger(va) || Number.isInteger(vb);
+  return (a <= 90 && b > 90 && b <= 180) || (b <= 90 && a > 90 && a <= 180) || (a <= 90 && b <= 90 && !anyInt);
+};
 
 async function readCsv(fileName, text, askCrs, warnings) {
   const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '' && !/^\s*#/.test(l));
@@ -303,7 +314,7 @@ async function readCsv(fileName, text, askCrs, warnings) {
 
   let ix = -1, iy = -1, crs = null, iname = -1, iz = -1, icode = -1;
   if (header) {
-    iname = find(RE.name);
+    iname = [RE.name, RE.point, RE.id].map((re) => find(re)).find((i) => i >= 0) ?? -1;
     const ilon = find(RE.lon), ilat = find(RE.lat);
     if (ilon >= 0 && ilat >= 0) {
       ix = ilon; iy = ilat; crs = 'EPSG:4326';
@@ -321,6 +332,22 @@ async function readCsv(fileName, text, askCrs, warnings) {
     iname = r0.findIndex((c) => isNaN(n(c)));
     if (numericCols.length < 2) {
       throw fail('CSV_COLUMNS', t('No se encontraron dos columnas con números de coordenadas. El CSV debe tener columnas como lat y lon, o este y norte.'));
+    }
+    // Primera columna con un número entero en todas las filas: el número de punto de muchas
+    // controladoras RTK («1,1129528.673,544600.453,41.2,ESQ») o un id («1,10.2148,-83.5929»).
+    // Es el nombre, no una coordenada, si las dos columnas siguientes forman un par de coordenadas y
+    // ella con la segunda no (o solo como una latitud entera, o la «altura» sería un este o un norte).
+    if (numericCols.length >= 3 && numericCols[0] === 0) {
+      const [c0, c1, c2] = numericCols.slice(0, 3).map((i) => n(r0[i]));
+      const idCol = rows.every((r) => {
+        const v = n(r[0]);
+        return isNaN(v) || (Number.isInteger(v) && Math.abs(v) < 100000);
+      });
+      const pairOk = (va, vb) => looksGeo(va, vb) || isEasting(va) || isEasting(vb);
+      if (idCol && pairOk(c1, c2) && (!pairOk(c0, c1) || looksGeo(c0, c1) || Math.abs(c2) > 9000)) {
+        iname = 0;
+        numericCols.shift();
+      }
     }
     const [a, b] = numericCols;
     const va = n(r0[a]), vb = n(r0[b]);
@@ -340,8 +367,9 @@ async function readCsv(fileName, text, askCrs, warnings) {
     else if (isEasting(va) && !isEasting(vb)) { ix = a; iy = b; }      // E,N
     else { ix = a; iy = b; warnings.push(t('No se pudo saber si las columnas son este, norte o norte, este; se tomaron como este, norte. Si los puntos salen girados o lejos, cambie el orden de las columnas.')); }
     if (numericCols.length >= 3) iz = numericCols[2];
-    const lastText = r0.length - 1 - [...r0].reverse().findIndex((c) => isNaN(n(c)));
-    if (lastText > iname) icode = lastText;
+    const fromEnd = [...r0].reverse().findIndex((c) => isNaN(n(c)));
+    const lastText = r0.length - 1 - fromEnd;
+    if (fromEnd >= 0 && lastText > iname) icode = lastText; // sin columnas de texto no hay código
     if (!crs) crs = crsHint(fileName);
   }
   if (ix < 0 || iy < 0) {

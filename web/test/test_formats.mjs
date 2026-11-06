@@ -133,4 +133,44 @@ const errVs = (feats) => Math.max(...feats.map((f, i) => inverse(llOf(f), [Numbe
   setLang('es');
   console.log('  ok exportación CSV/GPX con punto decimal y claves fijas en cualquier idioma');
 }
+
+// 9. Número de punto en la primera columna (sin encabezado) y columna del nombre por prioridad
+{
+  // SingularPad con nombres numéricos: «1,N,E,Z,Código»
+  const sp = crtmRows.map(([, N, E], i) => `${i + 1},${N},${E},41.200,ESQ`).join('\n');
+  let q = null;
+  const r1 = await readVector('sp_CRTM05.csv', enc(sp), async (info) => { q = info; return 'EPSG:5367'; });
+  assert.equal(r1.features.length, 5);
+  assert.ok(Math.abs(q.sample[0] - Number(crtmRows[0][2])) < 1e-6 && Math.abs(q.sample[1] - Number(crtmRows[0][1])) < 1e-6, 'muestra este, norte');
+  assert.ok(errVs(r1.features) < 0.005, `id,N,E: ${errVs(r1.features)}`);
+  assert.equal(r1.features[0].get('name'), '1');
+  assert.equal(r1.features[0].get('code'), 'ESQ');
+  assert.equal(r1.features[0].get('z'), 41.2);
+  // «id,lat,lon» sin encabezado
+  const idll = ref.slice(0, 5).map((r, i) => `${i + 1},${r[2]},${r[3]}`).join('\n');
+  const r2 = await readVector('puntos.csv', enc(idll), async () => { throw new Error('no debía preguntar'); });
+  assert.equal(r2.crs, 'EPSG:4326');
+  assert.ok(errVs(r2.features) < 0.001, `id,lat,lon: ${errVs(r2.features)}`);
+  assert.equal(r2.features[4].get('name'), '5');
+  assert.equal(r2.features[0].get('code'), undefined);
+  // «id,lon,lat» con longitud de más de 90°
+  const r3 = await readVector('puntos.csv', enc('7,-120.5,45.25\n8,-120.6,45.3'), async () => null);
+  assert.ok(Math.abs(llOf(r3.features[0])[0] + 120.5) < 1e-9 && Math.abs(llOf(r3.features[0])[1] - 45.25) < 1e-9);
+  assert.equal(r3.features[1].get('name'), '8');
+  // Coordenadas enteras en metros: la primera columna sigue siendo coordenada
+  let s4 = null;
+  await readVector('b.csv', enc('50000,544663,41\n50010,544670,42'), async (info) => { s4 = info.sample; return null; }).catch(() => null);
+  assert.deepEqual(s4, [544663, 50000], 'N,E,Z enteros');
+  let s5 = null;
+  await readVector('c.csv', enc('544663,1129531,41\n544670,1129540,42'), async (info) => { s5 = info.sample; return null; }).catch(() => null);
+  assert.deepEqual(s5, [544663, 1129531], 'E,N,Z enteros');
+  // Con encabezado: «id,name,lat,lon» toma el nombre, no el id
+  const r6 = await readVector('pozos.csv', enc('id,name,lat,lon\n7,Pozo norte,10.2148,-83.5929\n8,Pozo sur,10.2150,-83.5930'), async () => null);
+  assert.deepEqual(r6.features.map((f) => f.get('name')), ['Pozo norte', 'Pozo sur']);
+  const r7 = await readVector('p.csv', enc('id;punto;x;y\n1;P12;544663,8;1129531,4'), async () => 'EPSG:5367');
+  assert.equal(r7.features[0].get('name'), 'P12');
+  const r8 = await readVector('p.csv', enc('id,lat,lon\n7,10.2148,-83.5929'), async () => null);
+  assert.equal(r8.features[0].get('name'), '7');
+  console.log('  ok número de punto en la 1.ª columna (id,N,E,Z,Código · id,lat,lon · id,lon,lat) y nombre antes que id');
+}
 console.log('\nFormatos: pruebas superadas');

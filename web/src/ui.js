@@ -116,6 +116,14 @@ export function toast(msg, ms = 2600) {
 // ---------------------------------------------------------------------------
 // Hoja inferior (paneles)
 const sheetStack = [];
+/** Elemento que tenía el foco al abrir la hoja: lo recupera al cerrarla. */
+let sheetOpener = null;
+// La hoja cerrada queda fuera del orden de tabulación y del lector de pantalla (inert) desde el
+// arranque: index.html la trae solo con aria-hidden.
+if (typeof document !== 'undefined') {
+  const s = document.getElementById('sheet');
+  if (s && !s.classList.contains('open')) s.inert = true;
+}
 
 /**
  * Abre un panel inferior (reemplaza al que estuviera abierto).
@@ -126,6 +134,9 @@ const sheetStack = [];
  */
 export function openSheet(title, html, {onClose, wide, onBack} = {}) {
   const sheet = $('#sheet');
+  // Si el foco ya está en la hoja (un panel abre otro), se conserva quién abrió el primero
+  if (!sheet.contains(document.activeElement)) sheetOpener = document.activeElement;
+  sheet.inert = false;
   if (sheetStack.length) {
     const prev = sheetStack[sheetStack.length - 1];
     if (prev.onClose) prev.onClose();
@@ -158,7 +169,24 @@ export function closeSheet() {
   if (top && top.onClose) top.onClose();
   sheet.classList.remove('open');
   sheet.setAttribute('aria-hidden', 'true');
+  // Fuera de la vista no deja botones en el orden de tabulación, y el foco vuelve a quien la abrió
+  // (si el foco está en un diálogo encima, sheetOpener se guarda para cuando ese diálogo se cierre)
+  const hadFocus = sheet.contains(document.activeElement);
+  sheet.inert = true;
+  if (hadFocus) {
+    focusSheetOpener();
+    sheetOpener = null;
+  }
   return true;
+}
+
+function focusSheetOpener() {
+  if (!sheetOpener || !sheetOpener.isConnected || typeof sheetOpener.focus !== 'function') return;
+  try {
+    sheetOpener.focus({preventScroll: true});
+  } catch {
+    // sin foco que devolver
+  }
 }
 
 /** Vuelve al panel anterior si el abierto tiene «Atrás» (para el botón Atrás de Android). */
@@ -210,7 +238,12 @@ export function dialog(title, html, buttons, onOpen) {
       wrap.remove();
       const k = modalStack.indexOf(entry);
       if (k >= 0) modalStack.splice(k, 1);
-      if (prevFocus && prevFocus.isConnected && typeof prevFocus.focus === 'function') {
+      const sheet = document.getElementById('sheet');
+      if (prevFocus && sheet && sheet.inert && sheet.contains(prevFocus)) {
+        // Quien abrió el diálogo quedó en la hoja, que se cerró mientras tanto
+        focusSheetOpener();
+        sheetOpener = null;
+      } else if (prevFocus && prevFocus.isConnected && typeof prevFocus.focus === 'function') {
         try {
           prevFocus.focus({preventScroll: true});
         } catch {
@@ -243,6 +276,22 @@ export function dialog(title, html, buttons, onOpen) {
         if (p >= 0) {
           e.preventDefault();
           press(p);
+        }
+      } else if (e.key === 'Tab') {
+        // El foco no sale del diálogo: Tab desde el último control vuelve al primero, y Mayús+Tab al revés
+        const f = $$('button, input, select, textarea, [href], [tabindex]:not([tabindex="-1"])', wrap)
+          .filter((x) => !x.disabled && x.getClientRects().length);
+        if (!f.length) {
+          e.preventDefault();
+          return;
+        }
+        const first = f[0], last = f[f.length - 1], cur = document.activeElement, inList = f.includes(cur);
+        if (e.shiftKey && (cur === first || !inList)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (cur === last || !inList)) {
+          e.preventDefault();
+          first.focus();
         }
       }
     });
@@ -342,7 +391,7 @@ export function crsDialog(title, msg, options, preselect, ctx) {
     const row = (e, reason, group) => {
       const on = e.code === selected;
       const sub = [e.code, crsDescription(e.code)].filter(Boolean).join(' · ');
-      return `<button type="button" class="list-row${on ? ' on' : ''}" role="option" aria-selected="${on}" data-code="${esc(e.code)}" data-group="${group}"${e.info.family && FAMILIES[e.info.family] ? ` data-fold="${esc(e.info.family)}"` : ''}>`
+      return `<button type="button" class="list-row${on ? ' on' : ''}" aria-pressed="${on}" data-code="${esc(e.code)}" data-group="${group}"${e.info.family && FAMILIES[e.info.family] ? ` data-fold="${esc(e.info.family)}"` : ''}>`
         + `<span data-ic>${icon(on ? 'check' : 'globe')}</span><span style="min-width:0;overflow-wrap:anywhere"><b>${esc(e.info.name)}</b><small>${esc(sub)}</small>${reason ? `<small><b>${esc(reason)}</b></small>` : ''}</span></button>`;
     };
     let html = '';
@@ -369,7 +418,7 @@ export function crsDialog(title, msg, options, preselect, ctx) {
 
   const body = `<p>${esc(msg)}</p>${unknown ? `<p class="note info">${esc(unknownCrsHelp(unknown))}</p>` : ''}
     <label class="field"><span>${esc(t('Buscar un sistema'))}</span><input type="search" id="crsQ" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="${esc(t('País, nombre, zona UTM o código EPSG'))}"></label>
-    <div id="crsList" class="choice" role="listbox" aria-label="${esc(t('Sistemas de coordenadas'))}" style="max-height:min(46vh,440px);overflow-y:auto;margin:8px 0;padding:2px">${listHtml()}</div>
+    <div id="crsList" class="choice" role="group" aria-label="${esc(t('Sistemas de coordenadas'))}" style="max-height:min(46vh,440px);overflow-y:auto;margin:8px 0;padding:2px">${listHtml()}</div>
     <div id="crsPrev" class="note" role="status" aria-live="polite" hidden></div>
     <div class="row-actions"><button type="button" class="btn text" id="crsAddBtn" aria-expanded="false">${icon('plus')}${esc(t('Pegar definición PROJ'))}</button></div>
     <div id="crsAdd" hidden>
@@ -472,7 +521,7 @@ export function crsDialog(title, msg, options, preselect, ctx) {
         $$('[data-code]', listEl).forEach((r) => {
           const on = r.dataset.code === code;
           r.classList.toggle('on', on);
-          r.setAttribute('aria-selected', String(on));
+          r.setAttribute('aria-pressed', String(on));
           const ic = $('[data-ic]', r);
           if (ic) ic.innerHTML = icon(on ? 'check' : 'globe');
         });

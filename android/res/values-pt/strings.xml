@@ -4,7 +4,7 @@
     <string name="track_recording">Gravando a trilha</string>
     <string name="track_waiting">Aguardando o sinal de GPS…</string>
     <string name="toast_render_gone">O mapa foi reiniciado por falta de memória.</string>
-    <string name="toast_no_picker">Este telefone não tem um seletor de arquivos.</string>
+    <string name="toast_no_picker">Este celular não tem um seletor de arquivos.</string>
     <string name="toast_link">Não foi possível abrir o link.</string>
     <string name="err_bad_name">Nome de arquivo inválido.</string>
     <string name="err_space_need">Espaço insuficiente: são necessários %1$d MB livres (há %2$d MB).</string>

@@ -202,6 +202,44 @@ export function averageFixes(fixes) {
   return {lon: ll[0], lat: ll[1], alt: swz ? sz / swz : null, acc: nacc ? sacc / nacc : null, spread, n: pts.length};
 }
 
+// Atributos que el escritor GPX de OpenLayers copia a etiquetas con tipo fijo (xsd): un texto
+// ahí da <time>NaN-NaN…</time>, un <ele> que no es número o, con «ele» en texto, un error.
+const GPX_DECIMAL = ['ele', 'magvar', 'geoidheight', 'hdop', 'vdop', 'pdop', 'ageofdgpsdata'];
+const GPX_INTEGER = ['sat', 'dgpsid', 'number'];
+
+/**
+ * Valores para exportar a GPX los atributos con tipo fijo de un elemento: «time» en segundos
+ * desde 1970 (lo que espera OpenLayers) a partir de una fecha ISO 8601, un Date o un número
+ * (en segundos, o en milisegundos si es muy grande), y las alturas y cantidades como números.
+ * Solo trae las claves presentes en `props`; las que no se pueden convertir valen undefined
+ * (hay que quitarlas antes de escribir). Ejemplo: {time: '2026-11-05T12:00:00Z'} → {time: 1793880000}.
+ */
+export function gpxTypedProps(props) {
+  const out = {};
+  const p = props || {};
+  const num = (v) => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v.trim()) : NaN);
+  if (p.time !== undefined) {
+    const v = p.time;
+    let ms = NaN;
+    if (v instanceof Date) ms = v.getTime();
+    else if (typeof v === 'number') ms = Math.abs(v) > 1e11 ? v : v * 1000; // 1e11 s sería el año 5138
+    else if (typeof v === 'string' && /^\s*[+-]?\d{4,6}-\d{2}-\d{2}/.test(v)) ms = Date.parse(v.trim());
+    // Solo años 0001 a 9999: los que se pueden escribir como xsd:dateTime de 4 cifras
+    out.time = ms >= -62135596800000 && ms <= 253402300799999 ? ms / 1000 : undefined;
+  }
+  for (const k of GPX_DECIMAL) {
+    if (p[k] === undefined) continue;
+    const n = num(p[k]);
+    out[k] = Number.isFinite(n) ? n : undefined;
+  }
+  for (const k of GPX_INTEGER) {
+    if (p[k] === undefined) continue;
+    const n = num(p[k]);
+    out[k] = Number.isInteger(n) && n >= 0 ? n : undefined;
+  }
+  return out;
+}
+
 /** Campos (claves de atributos) de una lista de propiedades, en orden de aparición. */
 export function fieldsOf(propsList) {
   const keys = [];

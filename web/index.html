@@ -38,8 +38,9 @@
   <!-- Aviso flotante para empezar (sin mapas propios) -->
   <section id="startCard" class="start-card" hidden></section>
 
-  <!-- Coordenadas de mi posición (toque para cambiar el formato) -->
-  <button id="coordBar" class="coord-bar" data-i18n-aria="Coordenadas de mi posición" aria-label="Coordenadas de mi posición">
+  <!-- Coordenadas de mi posición (toque para cambiar el formato). El nombre accesible lo pone
+       updateGpsUi() con las coordenadas que se ven. -->
+  <button id="coordBar" class="coord-bar">
     <span class="cb-main" data-i18n="Sin posición">Sin posición</span>
     <span class="cb-sub"></span>
   </button>
@@ -62,6 +63,8 @@
       <button id="mDone" class="btn primary" data-i18n="Listo">Listo</button>
     </div>
   </div>
+  <!-- Resultados de medir y avisos al dibujar un área, para lectores de pantalla (región que ya existe) -->
+  <span id="measureLive" class="nav-sr" aria-live="polite"></span>
 
   <section id="editBar" class="edit-bar" hidden data-i18n-aria="Herramientas de edición" aria-label="Herramientas de edición"></section>
 

@@ -1,10 +1,14 @@
 /* Tarjeta de navegación (seguir una línea, recorrer puntos, ir a un punto). Solo usa tokens de style.css.
    Mientras se navega no hay barra inferior ni barra de coordenadas: la tarjeta va abajo del todo.
    Presupuesto en un teléfono de 320×568: 46 % de la altura (≈ 260 px) con los detalles cerrados.
-   Todo tiene alto fijo (cabecera, números, barra, frase) para que nada salte al cambiar los números. */
+   Con texto grande (--text-scale > 1) el tope crece en proporción, hasta el de los detalles abiertos,
+   para que la frase y los botones de puntos no queden cortados; con tamaño 1 no cambia.
+   Números y barra tienen alto fijo para que nada salte al cambiar los números; la tarjeta va
+   anclada abajo, así que si la frase o el nombre necesitan otro renglón crece hacia arriba y los
+   botones no se mueven bajo el dedo. */
 .nav-card {
   position: absolute; left: var(--gap); right: var(--gap); bottom: calc(var(--gap) + var(--safe-b)); z-index: 17;
-  max-height: 46vh; overflow-y: auto; overscroll-behavior: contain;
+  max-height: 46vh; max-height: clamp(46vh, calc(46vh * var(--text-scale)), 74vh); overflow-y: auto; overscroll-behavior: contain;
   display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 10px;
   background: var(--surface); color: var(--on-surface); border-radius: var(--r-xl); box-shadow: var(--shadow-3);
   border: var(--border-w) solid transparent;
@@ -24,7 +28,11 @@
 .nav-head-ic { flex: none; display: grid; place-items: center; width: 28px; color: var(--primary); }
 .nav-head-ic .ic { width: 22px; height: 22px; }
 .nav-head-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-.nav-title { font-weight: 800; font-size: 1rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Nombre del punto o de la línea: hasta 2 renglones, para que con texto grande «P001» no quede en «P00…» */
+.nav-title {
+  font-weight: 800; font-size: 1rem; line-height: 1.25; white-space: normal; overflow: hidden; text-overflow: ellipsis; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
 .nav-sub { color: var(--muted); font-size: 0.875rem; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .nav-acc { display: inline-flex; align-items: center; gap: 2px; vertical-align: bottom; }
 .nav-acc.warn { color: var(--warn-fg); background: var(--warn-bg); border-radius: 6px; padding: 0 4px; margin-inline-end: 6px; font-weight: 800; }
@@ -43,7 +51,8 @@
   display: flex; align-items: center; gap: 4px; height: 1.2em; overflow: hidden; white-space: nowrap;
   font-size: min(1.75rem, 7vw); font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums;
 }
-.nav-card .big > span { overflow: hidden; text-overflow: clip; }
+/* Si el número no cabe, navui.js (fitNum) achica su letra; si ni así cabe, «…» deja ver que falta algo */
+.nav-card .big > span { overflow: hidden; text-overflow: ellipsis; }
 .nav-card .big small { font-size: 0.6em; font-weight: 700; }
 .nav-card .big .ng { width: 0.85em; height: 0.85em; flex: none; }
 .nav-nums.tall .big { height: 2.5rem; }
@@ -88,15 +97,16 @@
 :root[data-theme='sun'] .lb-center { width: 5px; margin-left: -2.5px; }
 :root[data-theme='sun'] .lb-tick { opacity: 1; }
 
-/* Frase de guía: un caso por frase, alto fijo de 2 renglones, icono + color de fondo */
+/* Frase de guía: un caso por frase, icono + color de fondo. Reserva siempre 2 renglones (no salta
+   entre frases cortas y largas) y, con texto grande, crece lo necesario: nunca se corta el «qué hacer». */
 .nav-guide {
-  flex: none; display: flex; align-items: center; gap: 8px; height: max(48px, calc(2.5em + 8px)); padding: 4px 8px 4px 10px; overflow: hidden;
+  flex: none; display: flex; align-items: center; gap: 8px; min-height: max(48px, calc(2.5em + 8px)); padding: 4px 8px 4px 10px; overflow: hidden;
   border-radius: var(--r-md); border: var(--border-w) solid transparent; font-size: 0.9375rem; font-weight: 700; line-height: 1.25;
   background: var(--surface-2); color: var(--on-surface);
 }
 .nav-guide > span:first-child { flex: none; display: grid; place-items: center; }
 .nav-guide .ng { width: 22px; height: 22px; }
-.nav-guide .ng-txt { flex: 1 1 auto; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.nav-guide .ng-txt { flex: 1 1 auto; min-width: 0; display: block; }
 .nav-guide[data-state='ok'] { background: var(--ok-bg); color: var(--ok-fg); }
 .nav-guide[data-state='warn'], .nav-guide[data-state='pause'] { background: var(--warn-bg); color: var(--warn-fg); }
 .nav-guide[data-state='bad'] { background: var(--danger-container); color: var(--on-danger-container); }

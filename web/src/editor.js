@@ -39,7 +39,7 @@ import {$, icon, esc, toast, openSheet, closeSheet, dialog, confirmDialog, promp
 import {t, tn, N_, fmtNum, fmtDateTime, parseLocaleNumber, locale} from './i18n.js';
 import {
   nextName, nextNumericId, renumberNames, parseAngle, parseNumber, pointAtDistanceBearing, splitLineCoords, fieldsOf, coerceValue,
-  isNumberText, toBool, cleanFieldName, safeFileName, isoDate, averageFixes, sourceCode, HIDDEN_PROPS,
+  isNumberText, toBool, cleanFieldName, safeFileName, isoDate, averageFixes, sourceCode, gpxTypedProps, HIDDEN_PROPS,
 } from './editgeo.js';
 
 const EDIT_DEFAULTS = {snap: true, snapTol: 16, formOnAdd: false, multi: false, streamM: 2, avgSec: 10, warnAcc: 10};
@@ -902,8 +902,34 @@ export class Editor {
     return this.addFeature(new Feature(new Point(fromLL(ll))), extra);
   }
 
+  /**
+   * ¿El GPS no puede dar una posición útil por mucho que se espere? Sin permiso, con la
+   * ubicación del teléfono apagada, solo aproximada o con el GPS sin encender, dice qué hacer
+   * (como «Marcar») en vez de «espere al aire libre», y devuelve true.
+   */
+  gpsUnavailable() {
+    const gps = this.ctx.gps;
+    const u = gps.usability({maxAge: Infinity, maxAcc: Infinity});
+    if (u.code === 'denied' || u.code === 'off' || u.code === 'approximate') {
+      const text = gps.problem({maxAge: Infinity, maxAcc: Infinity}).text;
+      // Sin permiso, main.js explica para qué es y lo pide (o abre los ajustes si Android ya no
+      // pregunta); si no tenía nada que pedir (navegador), devuelve true y se dice qué pasa
+      if (u.code === 'denied' && this.ctx.ensureLocation) {
+        Promise.resolve(this.ctx.ensureLocation()).then((nothingAsked) => nothingAsked && toast(text, 6000), () => {});
+      } else toast(text, 6000);
+      return true;
+    }
+    // El GPS ni siquiera se encendió (todavía no se dio permiso, o se respondió «Ahora no»)
+    if (!gps.running && !gps.sim && this.ctx.ensureLocation) {
+      this.ctx.ensureLocation();
+      return true;
+    }
+    return false;
+  }
+
   /** Posición GPS reciente (≤ 4 s); si es vieja o no hay, avisa y devuelve null. */
   gpsFixOrWarn() {
+    if (this.gpsUnavailable()) return null;
     const f = this.ctx.gps.fix;
     if (!f || this.ctx.gps.isStale()) {
       toast(f ? t('La posición GPS no está al día (el punto azul está gris). Espere unos segundos al aire libre.') : t('Todavía no hay posición GPS. Espere unos segundos al aire libre.'), 4000);
@@ -1042,6 +1068,7 @@ export class Editor {
       this.render();
       return toast(t('En pausa. Toque el mapa o «Punto GPS» para seguir a mano, o «Dibujar caminando» para seguir grabando.'), 4500);
     }
+    if (this.gpsUnavailable()) return; // no quedarse «esperando una buena posición» que nunca llega
     if (this.tool !== 'line' && this.tool !== 'polygon') {
       const types = this.shownTypes();
       if (!types.includes('LineString') && !types.includes('Polygon')) return;
@@ -1699,6 +1726,16 @@ export class Editor {
       const ok = fs.filter((f) => ['Point', 'LineString', 'MultiLineString'].includes(typeOf(f))).map((f) => {
         const c = f.clone();
         c.setProperties({name: String(f.get(key) ?? '')});
+        // «time» en texto (como lo escribe el GeoJSON de la app) o «ele» que no es número darían un GPX inválido
+        for (const [k, v] of Object.entries(gpxTypedProps(c.getProperties()))) {
+          if (v === undefined) c.unset(k, true);
+          else c.set(k, v, true);
+        }
+        // En una ruta, OpenLayers copiaría la hora y la altura de la línea a cada uno de sus puntos
+        if (typeOf(f) === 'LineString') {
+          c.unset('time', true);
+          c.unset('ele', true);
+        }
         return c;
       });
       if (ok.length < fs.length) toast(t('GPX no admite áreas: se exportan solo los puntos y las líneas.'), 4000);
@@ -1851,10 +1888,11 @@ export class Editor {
     const canUndo = this.drawing ? this.sketchVertices() > 0 : this.history.length > 0;
     const busy = !!(this.drawing || this.streaming || this.avg);
     const undo = {id: 'undo', ic: 'undo', label: t('Deshacer'), cls: `eb-pin ${this.snack && this.snack.undoable ? 'pulse' : ''}`, wait: !canUndo, why: this.drawing ? t('Todavía no hay puntos que quitar.') : t('No hay nada que deshacer.')};
+    // «Más» y «Listo» van juntos: si al nombre le falta lugar bajan los dos a otra fila (editor.css)
     this.setPart('.eb-top', `${this.btnHtml(undo)}
         <div class="eb-title"><b class="eb-name">${esc(this.entry.rec.name)}</b><span class="eb-sub"></span></div>
-        ${busy ? '' : this.btnHtml({id: 'more', ic: 'more', label: t('Más'), cls: 'eb-pin'})}
-        ${this.btnHtml({id: 'done', ic: 'check', label: t('Listo'), cls: 'eb-pin primary'})}`);
+        <div class="eb-pins">${busy ? '' : this.btnHtml({id: 'more', ic: 'more', label: t('Más'), cls: 'eb-pin'})}
+        ${this.btnHtml({id: 'done', ic: 'check', label: t('Listo'), cls: 'eb-pin primary'})}</div>`);
     this.renderStatus();
     this.renderTools();
     this.renderHint();
@@ -1874,6 +1912,7 @@ export class Editor {
     const html = this.statusHtml();
     if (el && this.statusShown !== html) {
       el.innerHTML = html;
+      el.classList.toggle('bad', this.saveState === 'error'); // «Sin guardar»: en dos líneas si hace falta (editor.css)
       this.statusShown = html;
     }
   }

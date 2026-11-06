@@ -1,7 +1,7 @@
 // Funciones de edición (node test/test_editgeo.mjs)
 import assert from 'node:assert/strict';
 import {registerAll, localPlane} from '../src/crs.js';
-import {nextName, nextNumericId, renumberNames, parseAngle, parseNumber, pointAtDistanceBearing, splitLineCoords, fieldsOf, coerceValue, cleanFieldName, isNumberText, toBool, sourceCode, safeFileName, isoDate, averageFixes} from '../src/editgeo.js';
+import {nextName, nextNumericId, renumberNames, parseAngle, parseNumber, pointAtDistanceBearing, splitLineCoords, fieldsOf, coerceValue, cleanFieldName, isNumberText, toBool, sourceCode, safeFileName, isoDate, averageFixes, gpxTypedProps} from '../src/editgeo.js';
 import {inverse} from '../src/geodesy.js';
 
 registerAll();
@@ -135,4 +135,18 @@ console.log('\nEdición: pruebas superadas');
   assert.deepEqual(b, [[4, 0, 14], [10, 0, 20], [10, 10, 30]]);
   assert.ok(a.every((c) => c.length === 3 && c.every(Number.isFinite)));
   console.log('  ok cortar una línea 3D: la Z del corte se interpola (14 m entre 10 y 20)');
+}
+
+// 7. Exportar a GPX: «time» y «ele» de los atributos con el tipo que exige el formato
+{
+  const g = gpxTypedProps({name: 'P001', time: '2026-11-05T12:00:00.000Z', ele: '41.5', sat: '7', fuente: 'gps'});
+  assert.deepEqual(g, {time: 1793880000, ele: 41.5, sat: 7}); // solo las claves con tipo; name y fuente no se tocan
+  assert.equal(gpxTypedProps({time: 1793880000}).time, 1793880000); // ya en segundos (como lo lee OpenLayers)
+  assert.equal(gpxTypedProps({time: 1793880000000}).time, 1793880000); // en milisegundos
+  assert.equal(gpxTypedProps({time: new Date(Date.UTC(2026, 10, 5, 12))}).time, 1793880000);
+  assert.deepEqual(gpxTypedProps({time: 'mañana', ele: 'alto', hdop: null, sat: -1, number: 'A12'}), {time: undefined, ele: undefined, hdop: undefined, sat: undefined, number: undefined});
+  assert.deepEqual(gpxTypedProps({time: '1'}), {time: undefined}); // no se adivina una fecha a partir de cualquier texto
+  assert.deepEqual(gpxTypedProps({}), {});
+  assert.deepEqual(gpxTypedProps(null), {});
+  console.log('  ok GPX: «time» en texto ISO pasa a segundos; «ele» en texto a número; lo que no sirve se quita');
 }

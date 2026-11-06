@@ -4,9 +4,10 @@
 // La tarjeta (#navCard) va abajo del todo (mientras se navega no hay barra inferior ni barra de
 // coordenadas) y no debe pasar del 46 % de la altura de la pantalla en un teléfono de 320×568:
 // cabecera con el nombre y «Detener», una fila con los 2 o 3 números clave, la barra de guía (solo
-// al seguir una línea), una frase de guía de alto fijo y, al recorrer puntos, los botones
-// Anterior / Llegué / Siguiente. Lo demás va en «Detalles», que se despliega. Nada cambia de
-// tamaño cuando cambian los números, para que los botones no salten bajo el dedo.
+// al seguir una línea), una frase de guía (2 renglones reservados; más solo con texto grande) y,
+// al recorrer puntos, los botones Anterior / Llegué / Siguiente. Lo demás va en «Detalles», que se
+// despliega. Nada cambia de tamaño cuando cambian los números, para que los botones no salten bajo
+// el dedo: un número que no cabe en su celda se achica (fitNum), nunca se le cortan cifras.
 //
 // Seguridad: si la posición es vieja, imprecisa o aproximada, la guía se pausa (números en —,
 // flecha y marca de la barra apagadas) y la frase dice por qué y qué hacer.
@@ -73,6 +74,8 @@ export class NavUI {
     gps.onChange((type) => {
       if (type === 'fix' || type === 'heading' || type === 'stale' || type === 'permission' || type === 'sim') this.update();
     });
+    // Al girar el teléfono cambia el ancho de las celdas: se vuelven a ajustar los números
+    if (typeof window !== 'undefined') window.addEventListener('resize', () => this.refitNums());
   }
 
   vibrate(ms) {
@@ -485,11 +488,31 @@ export class NavUI {
     if (this.cache['h:' + id] === v) return;
     this.cache['h:' + id] = v;
     const e = document.getElementById(id);
-    if (e) e.innerHTML = v;
+    if (!e) return;
+    e.innerHTML = v;
+    if (e.classList.contains('big')) this.fitNum(e);
   }
 
   /**
-   * Frase de guía (una por caso, de alto fijo). state: 'ok' | 'warn' | 'bad' | 'info' | 'pause'.
+   * Número grande que no cabe en su celda (p. ej. «4 999 ft» junto a la flecha de giro, o con texto
+   * grande): se achica la letra del número, hasta el 60 %, en vez de cortarle cifras sin aviso.
+   * La celda no cambia de alto. Si ni así cabe, el CSS muestra «…».
+   */
+  fitNum(e) {
+    const s = e.querySelector(':scope > span');
+    if (!s) return;
+    s.style.fontSize = '';
+    const need = s.scrollWidth, room = s.clientWidth;
+    if (room > 0 && need > room) s.style.fontSize = `${Math.max(0.6, Math.floor((room / need) * 100) / 100)}em`;
+  }
+
+  refitNums() {
+    if (!this.mode || this.card.hidden) return;
+    this.card.querySelectorAll('.big[id]').forEach((e) => this.fitNum(e));
+  }
+
+  /**
+   * Frase de guía (una por caso; reserva 2 renglones). state: 'ok' | 'warn' | 'bad' | 'info' | 'pause'.
    * key identifica el caso para anunciarlo a TalkBack solo cuando cambia.
    */
   guide(state, text, key, action = null) {

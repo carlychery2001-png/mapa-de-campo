@@ -7,11 +7,11 @@
     <string name="toast_no_picker">Aucun sélecteur de fichiers n’est disponible sur ce téléphone.</string>
     <string name="toast_link">Impossible d’ouvrir le lien.</string>
     <string name="err_bad_name">Nom de fichier non valide.</string>
-    <string name="err_space_need">Espace insuffisant : %1$d Mo libres sont nécessaires (%2$d Mo disponibles).</string>
-    <string name="err_save">Impossible d’enregistrer « %1$s ».</string>
-    <string name="err_space_for">Espace insuffisant pour « %1$s ».</string>
-    <string name="err_open">Impossible d’ouvrir « %1$s ».</string>
-    <string name="err_format">« %1$s » : format non pris en charge. Utilisez GeoTIFF, GeoJSON, KML/KMZ, GPX, CSV ou un fichier XML de connexions QGIS.</string>
+    <string name="err_space_need">Espace insuffisant : %1$d Mo libres sont nécessaires (%2$d Mo disponibles).</string>
+    <string name="err_save">Impossible d’enregistrer « %1$s ».</string>
+    <string name="err_space_for">Espace insuffisant pour « %1$s ».</string>
+    <string name="err_open">Impossible d’ouvrir « %1$s ».</string>
+    <string name="err_format">« %1$s » : format non pris en charge. Utilisez GeoTIFF, GeoJSON, KML/KMZ, GPX, CSV ou un fichier XML de connexions QGIS.</string>
     <string name="err_cancelled">annulé</string>
     <string name="err_write">le fichier n’a pas pu être écrit</string>
     <plurals name="track_points">

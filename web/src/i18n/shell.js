@@ -10,7 +10,7 @@ export default {
   'Menú': {en: 'Menu', fr: 'Menu', pt: 'Menu'},
   'Estado del GPS': {en: 'GPS status', fr: 'État du GPS', pt: 'Status do GPS'},
   'Buscando GPS…': {en: 'Looking for GPS…', fr: 'Recherche du GPS…', pt: 'Procurando GPS…'},
-  'Orientar al norte': {en: 'Point north up', fr: 'Orienter au nord', pt: 'Orientar para o norte'},
+  'Orientar al norte': {en: 'Reset map to north', fr: 'Orienter au nord', pt: 'Orientar para o norte'},
   'Acercar': {en: 'Zoom in', fr: 'Zoom avant', pt: 'Aproximar'},
   'Alejar': {en: 'Zoom out', fr: 'Zoom arrière', pt: 'Afastar'},
   'Mi ubicación': {en: 'My location', fr: 'Ma position', pt: 'Minha localização'},
@@ -20,7 +20,7 @@ export default {
   'Herramientas de edición': {en: 'Editing tools', fr: 'Outils de modification', pt: 'Ferramentas de edição'},
   'Capas': {en: 'Layers', fr: 'Couches', pt: 'Camadas'},
   'Marcar': {en: 'Mark', fr: 'Marquer', pt: 'Marcar'},
-  'Grabar': {en: 'Record', fr: 'Enregistrer', pt: 'Gravar'},
+  'Grabar': {en: 'Record', fr: 'Trace', pt: 'Gravar'}, // etiqueta de la barra inferior: «Enregistrer» no cabe en francés
   'Grabando': {en: 'Recording', fr: 'Enreg.', pt: 'Gravando'},
   'Medir': {en: 'Measure', fr: 'Mesurer', pt: 'Medir'},
   'Editar': {en: 'Edit', fr: 'Modifier', pt: 'Editar'},

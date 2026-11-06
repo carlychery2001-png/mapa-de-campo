@@ -363,14 +363,23 @@ public class MainActivity extends Activity {
                 gnss.start();
                 reportPermission();
             } else {
-                getSharedPreferences("mc_ui", MODE_PRIVATE).edit().putBoolean("askedLocation", true).apply();
+                // Si ya se negó una vez (Android pide explicar el motivo), cualquier respuesta que no sea
+                // «permitir» deja el permiso negado o bloqueado: se anota ya. Si no, se anota solo cuando
+                // el usuario de verdad lo niega (onRequestPermissionsResult): cerrar la pregunta con Atrás
+                // o tocando fuera no cuenta, y la próxima vez Android vuelve a preguntar.
+                if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) markLocationAsked();
                 requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQ_LOCATION);
             }
         });
     }
 
+    /** Recuerda que el usuario ya contestó «no» a la ubicación (para distinguir denied de blocked). */
+    private void markLocationAsked() {
+        getSharedPreferences("mc_ui", MODE_PRIVATE).edit().putBoolean("askedLocation", true).apply();
+    }
+
     /**
-     * Estado del permiso de ubicación sin pedirlo: granted, approximate, unknown (nunca se pidió),
+     * Estado del permiso de ubicación sin pedirlo: granted, approximate, unknown (nunca se negó),
      * denied (se negó pero se puede volver a pedir) o blocked (Android ya no muestra la pregunta).
      */
     String locationPermissionState() {
@@ -429,6 +438,9 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == REQ_LOCATION) {
+            // Una negativa de verdad deja pendiente la explicación (rationale); una pregunta cerrada
+            // sin contestar, no.
+            if (!hasLocationPermission() && shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) markLocationAsked();
             if (hasLocationPermission()) gnss.start();
             reportPermission();
         } else if (requestCode == REQ_NOTIFICATIONS) {

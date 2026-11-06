@@ -80,11 +80,11 @@ P2,-1.29245,36.82230,fence</code>
 <li><b>Steer</b>: how far you are from the line and which way to move.</li>
 <li><b>Turn in</b>: how far until the next turn. <b>To go</b> (on wide screens): what is left until the end.</li>
 <li>A sentence tells you what to do, for example “Move 2 m to the right.”</li>
-<li><b>Guidance bar</b>: the dot is you and the center stripe is the line. The green zone means you are doing fine; the thin marks are your off-line alert, and the hatched zone is beyond it. The dot carries ✓, ! or ✕, so you don’t need to tell colors apart. If you go off the line, the card turns red and the phone vibrates.</li>
+<li><b>Guidance bar</b>: the dot is you and the center stripe is the line. The green zone means you are doing fine; the thin marks are your off-the-line alert, and the hatched zone is beyond it. The dot carries ✓, ! or ✕, so you don’t need to tell colors apart. If you go off the line, the card turns red and the phone vibrates.</li>
 </ul>
 <p>Tap the route name to open <b>Details</b>: progress, GPS accuracy, <b>Find me on the route</b> and <b>Reverse direction</b>. With close parallel lines (for example, every 5 m), the app compares your position only with the current section and its neighbors, so GPS error doesn’t make it jump to another line. If you change lines on purpose, tap <b>Find me on the route</b>. If you walk the wrong way, the card warns you and offers to reverse the direction.</p>
-<p>If the GPS signal is lost, very imprecise or only approximate, guidance pauses (the numbers show “—”) and the sentence tells you what to do. If the arrow turns gray and asks you to calibrate the compass, move the phone in a figure 8 in the air.</p>
-<p><b>Stop</b> ends navigation and asks for confirmation if progress would be lost. If Android closes the app, it picks up where you were when you open it again. You can change the off-line alert distance in Settings → Navigation.</p>
+<p>If the GPS signal is lost, its accuracy is very low or the location is only approximate, guidance pauses (the numbers show “—”) and the sentence tells you what to do. If the arrow turns gray and asks you to calibrate the compass, move the phone in a figure 8 in the air.</p>
+<p><b>Stop</b> ends navigation and asks for confirmation if progress would be lost. If Android closes the app, it picks up where you were when you open it again. You can change the off-the-line alert distance in Settings → Navigation.</p>
 
 <h4 id="help-points">Visit points (stake out)</h4>
 <p>To go to a single place, tap a point, or touch and hold the map anywhere, and choose <b>Navigate here</b>. An arrow and the distance take you there.</p>
@@ -136,7 +136,7 @@ P2,-1.29245,36.82230,fence</code>
 <p>If a map looks shifted, tap its name in Layers and change its coordinate system.</p>
 <p><b>Custom system:</b> if your system is not in the list, tap <b>Paste PROJ definition</b> and paste the definition from epsg.io (PROJ.4 format) or from QGIS (Layer Properties → Information). If you give it its EPSG code, the app will recognize future files with that code by itself. Definitions that need a grid file (+nadgrids) don’t work offline: look on epsg.io for the version with +towgs84.</p>
 <p>The coordinate bar and Settings → <b>Coordinate format</b> offer decimal degrees, degrees-minutes-seconds and UTM.</p>
-<p class="note info">Costa Rica only: CRTM05 is the official projection. Since 2018 the official datum is CR-SIRGAS (EPSG:8908); the older CR05 (EPSG:5367) differs by up to ~10 cm. Lambert Norte and Lambert Sur on Ocotepeque 1935 (EPSG:5456/5457), from older maps, are also recognized. CRTM05 options appear only for data or positions inside Costa Rica.</p>
+<p class="note info">Costa Rica only: CRTM05 is the official projection. Since 2018 the official datum is CR-SIRGAS (EPSG:8908); the older CR05 (EPSG:5367) differs by up to ~10 cm. Lambert North and Lambert South on the Ocotepeque 1935 datum (EPSG:5456/5457), from older maps, are also recognized. CRTM05 options appear only for data or positions inside Costa Rica.</p>
 
 <h4 id="help-accuracy">Accuracy: phone or RTK</h4>
 <p>The ± value and the blue circle around your position are the <b>68%</b> radius that Android reports: your real position is inside the circle about 2 times out of 3. Under open sky, a phone usually achieves 3–5 m; under trees or next to buildings, much worse. The first position can take from 30 s to a few minutes.</p>
@@ -167,7 +167,7 @@ P2,-1.29245,36.82230,fence</code>
 <li><b>Large buttons (for use with gloves)</b>.</li>
 <li><b>Units</b>: metric (m, km, ha) or imperial (ft, mi, ac). They only change how measurements are shown; what you type in the fields stays in meters.</li>
 <li>Also: the coordinate format, point names on the map and keeping the screen on while navigating or recording.</li>
-<li><b>Navigation</b>: arrival radius, off-line alert, moving to the next point automatically and vibration.</li>
+<li><b>Navigation</b>: arrival radius, off-the-line alert, moving to the next point automatically and vibration.</li>
 <li><b>Record track</b>: minimum distance between points and positions discarded for poor accuracy.</li>
 <li><b>Practice</b>: simulate a walk along the line you are following, to practice indoors (first tap a line → <b>Follow this line</b>). For EARTH (optional): example data and orthophotos.</li>
 </ul>

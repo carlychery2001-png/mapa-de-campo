@@ -18,8 +18,8 @@ import sys
 import zipfile
 from pathlib import Path
 
-APP_VERSION = "1.5.0"
-VERSION_CODE = 6
+APP_VERSION = "1.5.1"
+VERSION_CODE = 7
 MIN_SDK = 24      # Android 7.0
 TARGET_SDK = 36   # Android 16
 BUILD_TOOLS = "36.1.0"

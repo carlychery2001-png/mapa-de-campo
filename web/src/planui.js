@@ -204,7 +204,10 @@ function netArea(ring, holes = []) {
 
 export class Planner {
   /**
-   * @param {object} ctx {map, nav, gps, waypoints, saveText, utmCode, savePlanLayers(name, linesGeoJSON, pointsGeoJSON)}
+   * @param {object} ctx {map, nav, gps, waypoints, saveText, utmCode, savePlanLayers(name, linesGeoJSON, pointsGeoJSON),
+   *   beforeDraw?() → boolean | Promise<boolean>}
+   *   beforeDraw (opcional): cierra los otros modos de dibujo (medir, editar) antes de dibujar el área;
+   *   si devuelve false (p. ej. la edición no se pudo guardar y sigue abierta), no se empieza a dibujar.
    */
   constructor(ctx) {
     this.ctx = ctx;
@@ -259,8 +262,11 @@ export class Planner {
   // ------------------------------------------------------------ dibujar el área
   // Usa la barra de medir (#measureBar): «Quitar esquina» (#mUndo), «Cancelar» (#mClose) y
   // «Terminar área» (#mDone). main.js conecta los botones con undoDraw(), stopDraw() y finishDraw().
-  startDraw() {
+  async startDraw() {
     closeSheet();
+    // Un solo modo de dibujo a la vez: con «Medir» o la edición abiertos habría dos interacciones
+    // Draw y cada toque agregaría un punto a las dos (ctx.beforeDraw las cierra).
+    if (typeof this.ctx.beforeDraw === 'function' && (await this.ctx.beforeDraw()) === false) return;
     this.stopDraw();
     this.drawSrc.clear();
     this.corners = 0;
@@ -301,10 +307,12 @@ export class Planner {
   /**
    * El dibujo cambió: cuenta las esquinas ya tocadas. El anillo del boceto trae además el punto
    * que sigue al dedo y el cierre, así que el área solo cambia cuando cambia la cantidad de esquinas.
+   * Justo después del primer toque OpenLayers crea el anillo sin cierre, [p0, p0]: ya es 1 esquina
+   * (en pantallas táctiles no hay movimiento del dedo entre toques que lo corrija).
    */
   onSketch(geom) {
     const ring = geom.getCoordinates()[0] || [];
-    const n = Math.max(0, ring.length - 2);
+    const n = ring.length === 2 ? 1 : Math.max(0, ring.length - 2);
     if (n === this.corners) return;
     this.corners = n;
     this.sketch = n >= 3 ? ring.slice(0, n).map(toLL) : null;
@@ -321,11 +329,13 @@ export class Planner {
     else if (n < 3) status = tn(3 - n, 'Falta {n} esquina para poder terminar.', 'Faltan {n} esquinas para poder terminar.');
     else status = tn(n, '{n} esquina · {area}', '{n} esquinas · {area}', {area: fmtArea(netArea(this.sketch))});
     const txt = $('#measureTxt');
-    if (txt) txt.innerHTML = `<span class="pd-line">${esc(line)}</span><span class="pd-status" aria-live="polite">${esc(status)}</span>`;
+    if (txt) txt.innerHTML = `<span class="pd-line">${esc(line)}</span><span class="pd-status">${esc(status)}</span>`;
+    const live = document.getElementById('measureLive');
+    if (live && live.textContent !== status) live.textContent = status;
     const undo = $('#mUndo'), cancel = $('#mClose'), done = $('#mDone');
     if (undo) {
       undo.textContent = t('Quitar esquina');
-      undo.setAttribute('aria-label', t('Quitar la última esquina'));
+      undo.removeAttribute('aria-label'); // el nombre accesible es el texto visible (WCAG 2.5.3)
       undo.disabled = n === 0;
     }
     if (cancel) {
@@ -650,7 +660,7 @@ export class Planner {
     if (nWp === 0) wpsHint = t('Para usar sus puntos, marque primero cada esquina con «Marcar».');
     else if (nWp < 3) wpsHint = tn(nWp, 'Tiene {n} punto marcado; se necesitan 3 o más.', 'Tiene {n} puntos marcados; se necesitan 3 o más.');
     else wpsHint = tn(nWp, 'Usa su {n} punto marcado como esquina.', 'Usa sus {n} puntos marcados como esquinas.');
-    return `<h3 class="pl-h"><span class="pl-n" aria-hidden="true">1</span>${esc(t('Área'))}</h3>
+    return `<h3 class="pl-h"><span class="pl-n" aria-hidden="true">1</span>${esc(t('Área del plan'))}</h3>
       ${has ? `<div class="pl-area"><b>${esc(fmtArea(this.plan ? this.plan.stats.area : netArea(this.ring, this.holes)))}</b><span>${esc(this.areaLabel || '')}</span></div>` : `<p class="note info">${esc(t('Primero defina el área: dibújela en el mapa, toque un polígono de una capa o use 3 o más puntos marcados.'))}</p>`}
       <div class="pl-src">
         <button type="button" class="btn ${has ? '' : 'primary'}" data-a="draw">${icon('poly')}<span>${esc(has ? t('Dibujar otra') : t('Dibujar área'))}</span></button>
@@ -722,6 +732,11 @@ export class Planner {
     </div>`;
     const body = openSheet(t('Planificar líneas o cuadrícula'), html, {wide: true});
     this.body = body;
+    // Clases para plan.css en lugar de :has(), que WebView < 105 no entiende. openSheet() vuelve a
+    // crear la cabecera y el cuerpo en cada panel, así que las clases se van con el planificador.
+    body.classList.add('pl-body');
+    const head = body.parentNode && body.parentNode.querySelector('.sheet-head');
+    if (head) head.classList.add('pl-head');
     this.renderCalc();
     this.syncChips();
     body.addEventListener('change', (e) => this.onInput(e));

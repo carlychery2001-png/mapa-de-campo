@@ -128,7 +128,8 @@ export class Measure {
     if (!geom) return 0;
     if (geom.getType() === 'Polygon') {
       const ring = geom.getCoordinates()[0] || [];
-      return Math.max(0, ring.length - 2); // [...tocados, puntero, cierre]
+      // [...tocados, puntero, cierre]; con la primera esquina el anillo es [p0, p0]
+      return ring.length === 2 ? 1 : Math.max(0, ring.length - 2);
     }
     return Math.max(0, geom.getCoordinates().length - 1); // [...tocados, puntero]
   }
@@ -164,6 +165,11 @@ export class Measure {
     }
     if (final) this.result = txt;
     $('#measureTxt').textContent = txt;
+    const live = document.getElementById('measureLive');
+    if (live && typeof txt === 'string' && (final || tapped !== this.lastAnnounced)) {
+      this.lastAnnounced = tapped;
+      live.textContent = txt;
+    }
   }
 
   /** La medida terminó (con «Listo» o tocando dos veces): deja la figura y el resultado. */

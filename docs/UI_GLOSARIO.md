@@ -20,7 +20,7 @@ Botones: 1–3 palabras. Avisos: qué pasó + qué hacer ahora («No se pudo abr
 |---|---|---|---|
 | Capas | Layers | Couches | Camadas |
 | Marcar | Mark | Marquer | Marcar |
-| Grabar | Record | Enregistrer | Gravar |
+| Grabar | Record | Trace | Gravar |
 | Grabando | Recording | Enreg. | Gravando |
 | Medir | Measure | Mesurer | Medir |
 | Editar | Edit | Modifier | Editar |
@@ -45,11 +45,11 @@ Botones: 1–3 palabras. Avisos: qué pasó + qué hacer ahora («No se pudo abr
 | vértice | vertex | sommet | vértice |
 | atributos | attributes | attributs | atributos |
 | ajuste a vértices y bordes (snapping) | snapping | accrochage | aderência |
-| deshacer / rehacer | undo / redo | annuler / rétablir | desfazer / refazer |
+| deshacer / rehacer | undo / redo | défaire / rétablir | desfazer / refazer |
 | guardar / exportar | save / export | enregistrer / exporter | salvar / exportar |
 | seguir una línea | follow a line | suivre une ligne | seguir uma linha |
 | recorrer los puntos (replanteo) | visit the points (stake out) | parcourir les points (implantation) | percorrer os pontos (locação) |
-| desvío lateral | off-line distance | écart latéral | desvio lateral |
+| aviso de desvío de la línea | off-the-line alert | alerte d’écart de la ligne | alerta de desvio da linha |
 | radio de llegada | arrival radius | rayon d’arrivée | raio de chegada |
 | planificar líneas o cuadrícula | plan lines or a grid | planifier des lignes ou une grille | planejar linhas ou grade |
 | líneas en serpentina | serpentine lines | lignes en serpentin | linhas em serpentina |

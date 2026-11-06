@@ -17,3 +17,4 @@ test_data/*
 docs/NOTAS_1.5_CAMBIOS.md
 docs/PENDIENTE_1.5.md
 !test_data/prueba_PixelIsPoint_UTM17N.tif
+docs/revision_1.5/

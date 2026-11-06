@@ -14,7 +14,7 @@ import {defaults as defaultInteractions} from 'ol/interaction/defaults.js';
 import {extend, createEmpty, isEmpty} from 'ol/extent.js';
 import {transform as olTransform} from 'ol/proj.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import {registerAll, crsName, fromWgs84, utmCodeFor, utmZone, inCostaRica, setPositionHint, unknownCrsHelp} from './crs.js';
+import {registerAll, crsName, fromWgs84, utmCodeFor, utmZone, inCostaRica, setPositionHint, unknownCrsHelp, isKnown} from './crs.js';
 import {toDMS, fmtDist, fmtArea, cardinal, sphericalBearing} from './geodesy.js';
 import {settings, saveSettings, loadLayers, saveLayers, loadView, saveView, loadNav} from './store.js';
 import {$, icon, esc, toast, openSheet, closeSheet, sheetBack, sheetIsOpen, dialog, closeModal, confirmDialog, promptDialog, crsDialog, fmtBytes, fmtTime, KEEP_OPEN} from './ui.js';
@@ -33,7 +33,7 @@ import {CREDIT_HTML, BIO_HTML} from './about.js';
 import {HELP} from './help/index.js';
 import {t, tn, N_, fmtNum, fmtDateTime, getLang, setLang, locale, LANGS, translateDom, parseLocaleNumber} from './i18n.js';
 
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 registerAll();
 
 // ---------------------------------------------------------------------------
@@ -46,7 +46,8 @@ const saved = loadView();
 // Sin vista guardada: EARTH para quien trabaja allí; para el resto, el mundo entero hasta que llegue
 // la primera posición GPS (entonces el mapa va a esa posición, ver gps.onChange).
 const EARTH_CENTER = [-83.5929, 10.2155];
-let centerOnFirstFix = !saved && settings.region !== 'earth';
+// Se decide en init(), después de la bienvenida: aquí el lugar de trabajo puede no estar elegido
+let centerOnFirstFix = false;
 const view = new View({
   projection: 'EPSG:3857',
   center: saved ? saved.center : settings.region === 'earth' ? fromLL(EARTH_CENTER) : fromLL([0, 15]),
@@ -57,11 +58,14 @@ const view = new View({
 });
 // Migración: antes solo existía el interruptor de OpenStreetMap
 if (settings.basemap === undefined) settings.basemap = settings.osm ? 'osm' : 'none';
+// Escala del mapa en las unidades de Ajustes (applySettings la cambia)
+const scaleUnits = () => (settings.units === 'imperial' ? 'imperial' : 'metric');
+const scaleLine = new ScaleLine({units: scaleUnits(), bar: true, steps: 2, text: false, minWidth: 110});
 const map = new OlMap({
   target: 'map',
   view,
   layers: [],
-  controls: [new ScaleLine({units: 'metric', bar: true, steps: 2, text: false, minWidth: 110}), new Attribution({collapsed: true})],
+  controls: [scaleLine, new Attribution({collapsed: true})],
   interactions: defaultInteractions({pinchRotate: false, altShiftDragRotate: false, doubleClickZoom: true}),
   moveTolerance: 4,
 });
@@ -130,10 +134,17 @@ const planner = new Planner({
   saveText: (...a) => saveText(...a),
   utmCode: (ll) => utmCodeFor(ll[0], ll[1]),
   savePlanLayers: (...a) => savePlanLayers(...a),
+  // Antes de dibujar el área del plan se cierran medir y editar (si no, cada toque iría a dos dibujos)
+  beforeDraw: async () => {
+    if (measure.active) measure.stop();
+    if (editor.active) return editor.stop();
+    return true;
+  },
 });
 
 const editor = new Editor({
   map, gps,
+  ensureLocation: () => ensureLocation(),
   entries: () => layers,
   persist: (entry, text) => persistEdited(entry, text),
   createLayer: (o) => createEditableLayer(o),
@@ -292,7 +303,8 @@ async function addRecord(rec, {zoom = false, fresh = false, size = 0} = {}) {
       const blob = blobs.get(rec.id);
       const buf = blob ? await blob.arrayBuffer() : await fetchBuffer(rec);
       if (!rec.color) rec.color = nextColor();
-      const r = await makeVectorLayer(rec, buf, (q) => askCrsFor(rec.name, q));
+      // Al restaurar, el sistema ya elegido responde la pregunta (no se vuelve a preguntar en cada arranque)
+      const r = await makeVectorLayer(rec, buf, (q) => (!fresh && rec.crs && isKnown(rec.crs) ? Promise.resolve(rec.crs) : askCrsFor(rec.name, q)));
       entry.layer = r.layer;
       entry.count = r.count;
       entry.extent = r.layer.getSource().getExtent();
@@ -706,6 +718,17 @@ function updateGpsUi() {
         ? t('Toque «Mi ubicación» para dar permiso')
         : gps.running ? t('Salga a cielo abierto y espere la señal') : t('Toque «Mi ubicación» para usar el GPS');
   }
+  // Nombre para lectores de pantalla: qué es la barra y lo que muestra (las coordenadas o el aviso)
+  bar.setAttribute('aria-label', `${t('Coordenadas de mi posición')}: ${bar.querySelector('.cb-main').textContent} · ${bar.querySelector('.cb-sub').textContent}`);
+}
+
+/** La próxima posición GPS ya no mueve el mapa: llegó, o la persona movió el mapa (se recuerda). */
+function stopCenterOnFirstFix() {
+  centerOnFirstFix = false;
+  if (!settings.centeredOnFix) {
+    settings.centeredOnFix = true;
+    saveSettings();
+  }
 }
 
 let followMode = 'off'; // off | follow | compass
@@ -750,7 +773,7 @@ gps.onChange((type) => {
     if (gps.fix && !gps.sim) setPositionHint([gps.fix.lon, gps.fix.lat]);
     // Primera vez fuera de EARTH: el mapa va a donde está la persona
     if (centerOnFirstFix && gps.fix && gps.quality() !== 'stale') {
-      centerOnFirstFix = false;
+      stopCenterOnFirstFix();
       view.animate({center: fromLL([gps.fix.lon, gps.fix.lat]), zoom: 16, duration: 600});
     }
     applyFollow();
@@ -764,7 +787,7 @@ gps.onChange((type) => {
 });
 map.on('pointerdrag', () => {
   if (followMode !== 'off') setFollow('off');
-  centerOnFirstFix = false;
+  stopCenterOnFirstFix();
 });
 
 // ---------------------------------------------------------------------------
@@ -1043,7 +1066,7 @@ function layerDetail(l) {
   body.querySelectorAll('[data-c]').forEach((b) => (b.onclick = async () => {
     r.color = b.dataset.c;
     const {vectorStyle} = await import('./layers.js');
-    l.layer.setStyle(vectorStyle(r.color, true, !r.noFill));
+    if (l.layer) l.layer.setStyle(vectorStyle(r.color, true, !r.noFill)); // sin capa (no se pudo abrir): el color queda guardado
     persist();
     layerDetail(l);
   }));
@@ -1405,13 +1428,13 @@ async function markHere() {
   } else if (f.acc > MARK_WARN_ACC) {
     const how = await dialog(
       t('Precisión baja'),
-      `<p>${t('El GPS indica ±{acc} m. Puede marcar igual, o promediar la posición durante 60 s para mejorarla.', {acc: fmtNum(f.acc, 0)})}</p>`,
+      `<p>${t('El GPS indica ±{acc}. Puede marcar igual, o promediar la posición durante 60 s para mejorarla.', {acc: fmtDist(f.acc)})}</p>`,
       [{label: t('Cancelar'), value: null}, {label: t('Promediar'), value: 'avg'}, {label: t('Marcar igual'), value: 'mark', primary: true}],
     );
     if (!how) return;
     if (how === 'avg') return averageAndSave();
   }
-  const name = await promptDialog(t('Guardar punto'), t('Precisión ±{acc} m. Nombre del punto:', {acc: fmtNum(f.acc, 1)}), waypoints.nextName());
+  const name = await promptDialog(t('Guardar punto'), t('Precisión ±{acc}. Nombre del punto:', {acc: fmtDist(f.acc)}), waypoints.nextName());
   if (name === null) return;
   const w = waypoints.add({name: name || undefined, lon: f.lon, lat: f.lat, alt: f.alt, msl: f.msl, acc: f.acc, note: ''});
   toast(t('Guardado en Mis puntos: {name} · ±{acc}', {name: w.name, acc: fmtDist(f.acc)}));
@@ -1471,16 +1494,24 @@ async function averageAndSave(secs = AVG_SECONDS) {
   dialog(
     t('Promediar la posición'),
     `<p>${esc(t('Deje el teléfono quieto, a cielo abierto, hasta que termine. Varias lecturas juntas dan un punto más estable.'))}</p>
-     <p id="avgTxt" role="status" aria-live="polite" style="font-weight:700;margin:8px 0">${esc(progress(0, 0))}</p>
+     <p id="avgTxt" style="font-weight:700;margin:8px 0">${esc(progress(0, 0))}</p>
+     <p id="avgLive" class="nav-sr" aria-live="polite"></p>
      <p id="avgSpread" class="muted text-sm" style="margin:0 0 8px"></p>
      <div style="height:10px;border-radius:5px;background:var(--surface-3);overflow:hidden"><i id="avgBar" style="display:block;height:100%;width:0;background:var(--primary)"></i></div>`,
     [{label: t('Cancelar'), value: 'cancel'}],
   ).then(() => {
     if (!finished) ctl.abort(); // «Cancelar», Atrás o un toque fuera del diálogo
   });
+  let lastLive = -1;
   const r = await averagePosition(gps, secs, (s, n, spread) => {
-    const txt = $('#avgTxt'), sp = $('#avgSpread'), bar = $('#avgBar');
+    const txt = $('#avgTxt'), sp = $('#avgSpread'), bar = $('#avgBar'), live = $('#avgLive');
     if (txt) txt.textContent = progress(s, n);
+    // Los lectores de pantalla oyen el avance cada 15 s, no cada segundo (así se llega a «Cancelar»)
+    const k = Math.floor(s / 15);
+    if (live && k !== lastLive) {
+      lastLive = k;
+      live.textContent = progress(s, n);
+    }
     if (sp) sp.textContent = n > 1 ? t('Las lecturas varían ±{d} entre sí.', {d: fmtDist(spread)}) : '';
     if (bar) bar.style.width = `${Math.min(100, (s / secs) * 100)}%`;
   }, ctl.signal);
@@ -1552,6 +1583,7 @@ function waypointsSheet() {
     }
     if (x && x.dataset.x === 'plan') {
       planner.setAreaFromPoints(waypoints.list.map((w) => [w.lon, w.lat]), tn(n, 'Desde {n} punto marcado', 'Desde {n} puntos marcados'));
+      if (editor.active) await editor.stop();
       planner.open();
       return;
     }
@@ -1625,7 +1657,7 @@ function renderTrackDetail() {
   if (rec && s.noSignal) status = `<p class="note warn"><b>${esc(t('Grabando, pero sin señal GPS.'))}</b><br>${esc(t('Los puntos se guardan cuando vuelva la señal. Salga a cielo abierto.'))}</p>`;
   else if (rec && s.waitAcc !== null) {
     status = `<p class="note warn"><b>${esc(t('Grabando, pero el GPS está impreciso (±{acc}).', {acc: fmtDist(s.waitAcc)}))}</b><br>${esc(t('Solo se guardan las posiciones mejores que ±{max}. Espere a que mejore.', {max: fmtDist(settings.trackMaxAcc)}))}</p>`;
-  } else if (rec) status = `<p class="note ok">${dot}<b>${esc(t('Grabando'))}</b><br>${esc(HAS_NATIVE ? t('Sigue grabando con la pantalla apagada.') : t('Mantenga esta página abierta mientras graba.'))}</p>`;
+  } else if (rec) status = `<p class="note ok">${dot}<b>${esc(t('Grabando ahora'))}</b><br>${esc(HAS_NATIVE ? t('Sigue grabando con la pantalla apagada.') : t('Mantenga esta página abierta mientras graba.'))}</p>`;
   else if (s.n) status = `<p class="note info">${esc(t('En pausa. «Continuar» sigue grabando el mismo recorrido. Para empezar otro, expórtelo o guárdelo como capa y luego bórrelo.'))}</p>`;
   else status = `<p>${esc(HAS_NATIVE ? t('Graba el camino que usted recorre con el GPS, también con la pantalla apagada.') : t('Graba el camino que usted recorre con el GPS.'))}</p>`;
   setHtml(el.querySelector('[data-part="info"]'), `${status}
@@ -1785,6 +1817,7 @@ function applySettings() {
   layers.forEach((l) => l.layer && l.layer.changed && l.layer.changed());
   updateGpsUi();
   updateTrackUi();
+  scaleLine.setUnits(scaleUnits());
   call('setUiPrefs', getLang(), settings.units);
 }
 
@@ -1961,7 +1994,10 @@ $('#btnMeasure').onclick = async () => {
     {label: t('Área'), value: 'Polygon'},
     {label: t('Distancia'), value: 'LineString', primary: true},
   ]);
-  if (kind) measure.start(kind);
+  if (kind) {
+    if (planner.drawing) planner.stopDraw();
+    measure.start(kind);
+  }
 };
 // Barra de medir y de dibujar el área del plan: Deshacer · Cancelar · Listo
 $('#mUndo').onclick = () => (planner.drawing ? planner.undoDraw() : measure.undo());
@@ -2015,7 +2051,8 @@ on('onBack', () => {
   return false;
 });
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') window.MC.onBack();
+  // Un diálogo que ya cerró con Escape (ui.js llama a preventDefault) no hace retroceder otro nivel
+  if (e.key === 'Escape' && !e.defaultPrevented) window.MC.onBack();
 });
 
 // Enlaces externos (atribuciones): se abren en el navegador del sistema
@@ -2191,13 +2228,14 @@ function welcome() {
     el.className = 'intro';
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'wTitle');
     const startLang = getLang();
     let region = null;
     const render = () => {
       const langOpts = [['auto', t('Automático (idioma del teléfono)')], ...LANGS.map((l) => [l.code, l.name])];
       el.innerHTML = `<div class="intro-body">
         <div class="intro-art">${icon('layers')}</div>
-        <h1>${t('Le damos la bienvenida a Mapa de Campo')}</h1>
+        <h1 id="wTitle">${t('Le damos la bienvenida a Mapa de Campo')}</h1>
         <p>${t('Mapas de campo que funcionan sin internet: vea dónde está sobre su propio mapa, marque puntos, mida, grabe recorridos y siga líneas con el GPS.')}</p>
         <label class="field"><span>${icon('lang')}${t('Idioma')}</span><select id="wLang">${langOpts.map(([v, n]) => `<option value="${v}" ${settings.lang === v ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
         <div class="field"><span>${t('¿Dónde va a trabajar?')}</span>
@@ -2213,9 +2251,21 @@ function welcome() {
         saveSettings();
         setLang(settings.lang);
         translateDom();
+        // Los textos cambian: se redibuja, pero quedan el desplazamiento y el foco en el selector
+        const top = el.querySelector('.intro-body').scrollTop;
         render();
+        el.querySelector('.intro-body').scrollTop = top;
+        el.querySelector('#wLang').focus();
       };
-      el.querySelectorAll('[data-r]').forEach((b) => (b.onclick = () => { region = b.dataset.r; render(); }));
+      // Elegir el lugar solo marca el botón (sin redibujar: no se pierden el foco ni el desplazamiento)
+      el.querySelectorAll('[data-r]').forEach((b) => (b.onclick = () => {
+        region = b.dataset.r;
+        el.querySelectorAll('[data-r]').forEach((x) => {
+          x.classList.toggle('on', x === b);
+          x.setAttribute('aria-pressed', String(x === b));
+        });
+        el.querySelector('#wGo').disabled = false;
+      }));
       el.querySelector('#wGo').onclick = () => {
         settings.region = region;
         settings.firstRun = false;
@@ -2267,6 +2317,9 @@ async function init() {
     if (await welcome()) return location.reload();
     applySettings();
   }
+  // Fuera de EARTH, la primera posición GPS lleva el mapa a donde está la persona, mientras no lo
+  // haya movido. La vista del mundo que se guarda durante la bienvenida no cuenta como movida.
+  centerOnFirstFix = !settings.centeredOnFix && settings.region !== 'earth' && (!saved || saved.zoom <= 3);
   // Restaura capas guardadas (en orden inverso para respetar el apilado)
   const recs = loadLayers();
   restoringLayers = true;

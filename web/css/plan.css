@@ -8,8 +8,9 @@
 .pair input { min-width: 0; flex: 1; }
 
 /* ------------------------------------------------------------------ pasos del panel */
-.sheet-body:has(> .plan) { padding-bottom: 0; } /* el pie fijo llega hasta el borde */
-.sheet:has(.plan) .sheet-head h2 { white-space: normal; line-height: 1.2; padding: 6px 0; } /* título largo (FR/PT) en dos líneas, sin cortarlo */
+/* .pl-body y .pl-head las pone planui.js (sin :has(), que WebView < 105 no entiende) */
+.sheet-body.pl-body { padding-bottom: 0; } /* el pie fijo llega hasta el borde */
+.sheet-head.pl-head h2 { white-space: normal; line-height: 1.2; padding: 6px 0; } /* título largo (FR/PT) en dos líneas, sin cortarlo */
 :root[data-theme='sun'] .plan .btn.tonal { border-color: var(--outline); } /* al sol, el botón tonal es blanco: necesita borde */
 .pl-h { display: flex; align-items: center; gap: 10px; margin: 24px 0 10px; font-size: 1.0625rem; font-weight: 800; color: var(--on-surface); }
 .plan > .pl-h:first-child { margin-top: 10px; }
@@ -41,24 +42,33 @@
 }
 .pl-opt:active { transform: scale(0.98); }
 .pl-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
-.pl-opt.on, .pl-opt:has(input:checked) {
+/* Elegida: planui.js pone .on. Las variantes con :has() van en reglas aparte, porque un navegador
+   sin :has() (WebView < 105) descarta la regla entera si las dos van en la misma lista. */
+.pl-opt.on {
+  border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); background: var(--primary-container); color: var(--on-primary-container);
+}
+.pl-opt:has(input:checked) {
   border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); background: var(--primary-container); color: var(--on-primary-container);
 }
 .pl-opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 .pl-pic { flex: none; width: 52px; height: 36px; color: var(--primary); }
-.pl-opt.on .pl-pic, .pl-opt:has(input:checked) .pl-pic { color: inherit; }
+.pl-opt.on .pl-pic { color: inherit; }
+.pl-opt:has(input:checked) .pl-pic { color: inherit; }
 .pl-pic svg { display: block; width: 100%; height: 100%; }
 .pl-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .pl-txt b { font-size: 1rem; line-height: 1.25; overflow-wrap: anywhere; }
 .pl-txt small { font-size: 0.875rem; line-height: 1.35; color: var(--muted); }
-.pl-opt.on .pl-txt small, .pl-opt:has(input:checked) .pl-txt small { color: inherit; }
+.pl-opt.on .pl-txt small { color: inherit; }
+.pl-opt:has(input:checked) .pl-txt small { color: inherit; }
 /* Marca de elegido: forma (círculo con ✓), no solo color */
 .pl-check {
   flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--outline); display: grid; place-items: center;
 }
 .pl-check .ic { width: 18px; height: 18px; visibility: hidden; }
-.pl-opt.on .pl-check, .pl-opt:has(input:checked) .pl-check { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-.pl-opt.on .pl-check .ic, .pl-opt:has(input:checked) .pl-check .ic { visibility: visible; }
+.pl-opt.on .pl-check { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.pl-opt:has(input:checked) .pl-check { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.pl-opt.on .pl-check .ic { visibility: visible; }
+.pl-opt:has(input:checked) .pl-check .ic { visibility: visible; }
 
 /* ------------------------------------------------------------------ paso 3: medidas */
 .res-box {

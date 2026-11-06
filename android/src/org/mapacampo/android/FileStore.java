@@ -15,11 +15,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * Copia los archivos elegidos por el usuario (URIs content:// del selector del
@@ -28,6 +32,8 @@ import java.util.concurrent.Executors;
  */
 final class FileStore {
     private static final List<String> EXT = Arrays.asList("tif", "tiff", "geojson", "json", "kml", "kmz", "gpx", "csv", "txt", "xml");
+    /** Partes de un Shapefile: la app no las abre, pero la página explica cómo convertirlas (y borra la copia). */
+    private static final List<String> SHAPEFILE = Arrays.asList("shp", "shx", "dbf", "prj", "cpg");
     private final Context ctx;
     private final File dir;
     private static final ExecutorService io = Executors.newSingleThreadExecutor(); // uno por proceso: copias en fila
@@ -222,13 +228,19 @@ final class FileStore {
         }
         String ext = extOf(name);
         if (!EXT.contains(ext)) {
-            String sniffed = sniff(head, headLen);
-            if (sniffed == null) {
-                //noinspection ResultOfMethodCallIgnored
-                tmp.delete();
-                throw new IOException(L10n.s(ctx, R.string.err_format, name));
+            if (SHAPEFILE.contains(ext) || (headLen >= 2 && head[0] == 'P' && head[1] == 'K' && isShapefileZip(tmp))) {
+                // Shapefile (suelto o en un ZIP): se entrega con su nombre (con .zip si no lo traía) para
+                // que la página explique cómo convertirlo, en vez de abrirlo como un KMZ sin KML.
+                if (!SHAPEFILE.contains(ext) && !ext.equals("zip")) name = name + ".zip";
+            } else {
+                String sniffed = sniff(head, headLen);
+                if (sniffed == null) {
+                    //noinspection ResultOfMethodCallIgnored
+                    tmp.delete();
+                    throw new IOException(L10n.s(ctx, R.string.err_format, name));
+                }
+                name = name + "." + sniffed;
             }
-            name = name + "." + sniffed;
         }
         File dest = unique(name, tmp.length());
         if (dest.exists()) {
@@ -311,6 +323,23 @@ final class FileStore {
     private static String extOf(String n) {
         int dot = n.lastIndexOf('.');
         return dot >= 0 ? n.substring(dot + 1).toLowerCase(Locale.ROOT) : "";
+    }
+
+    /** true si el ZIP trae un Shapefile (.shp) y ningún KML (un KMZ renombrado a .zip se abre como KMZ). */
+    private static boolean isShapefileZip(File f) {
+        boolean shp = false;
+        // ISO-8859-1: los nombres de un ZIP hecho en Windows no siempre son UTF-8 (solo se miran las extensiones)
+        try (ZipFile z = new ZipFile(f, StandardCharsets.ISO_8859_1)) {
+            Enumeration<? extends ZipEntry> en = z.entries();
+            while (en.hasMoreElements()) {
+                String n = en.nextElement().getName().toLowerCase(Locale.ROOT);
+                if (n.endsWith(".kml")) return false;
+                if (n.endsWith(".shp")) shp = true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return shp;
     }
 
     /** Reconoce el formato por los primeros bytes cuando el nombre no trae extensión. */

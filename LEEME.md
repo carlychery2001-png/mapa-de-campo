@@ -6,7 +6,7 @@ Visor GIS de campo **sin conexión**, al estilo de Avenza Maps. Sirve para carga
 un **GeoTIFF propio** (ortofoto de dron, mapa escaneado y georreferenciado, MDE), superponer las
 líneas y puntos del levantamiento (GeoJSON, KML/KMZ, GPX, CSV) y **seguirlos con el GPS** en el terreno.
 
-- APK instalable: `dist/MapaDeCampo-1.5.0.apk` (Android 7.0 o superior, 66 MB por las dos ortofotos de EARTH incluidas). Se instala encima de las versiones anteriores (1.0 a 1.4) sin perder datos.
+- APK instalable: `dist/MapaDeCampo-1.5.1.apk` (Android 7.0 o superior, 66 MB por las dos ortofotos de EARTH incluidas). Se instala encima de las versiones anteriores (1.0 a 1.5.0) sin perder datos.
 - Idiomas: **español, English, français y português (Brasil)**. Toma el idioma del teléfono (si no es uno de esos, inglés) y se cambia en Ajustes → Idioma.
 - Funciona en **cualquier lugar del mundo**: sistemas de coordenadas de todos los continentes, mapa base de OpenStreetMap (con internet) y sus propios mapas sin conexión. El paquete de EARTH (ortofotos y datos de ejemplo) es opcional.
 
@@ -22,7 +22,7 @@ líneas y puntos del levantamiento (GeoJSON, KML/KMZ, GPX, CSV) y **seguirlos co
 
 ## Instalación en el teléfono
 
-1. Copie `MapaDeCampo-1.5.0.apk` al teléfono (cable USB, Google Drive o WhatsApp como documento; por correo no suele pasar, pesa 66 MB).
+1. Copie `MapaDeCampo-1.5.1.apk` al teléfono (cable USB, Google Drive o WhatsApp como documento; por correo no suele pasar, pesa 66 MB).
 2. Ábralo desde *Archivos*. Android pedirá permitir **«Instalar apps desconocidas»** para esa app
    (Archivos, Chrome, etc.). Es normal en apps que no vienen de Google Play.
 3. La primera vez elija el idioma y dónde va a trabajar. Cuando la app lo pida, conceda **Ubicación → Precisa / Mientras se usa la app**.
@@ -131,7 +131,7 @@ usarlas sin conexión**. En el campo sin señal use su propio GeoTIFF (por ejemp
 
 ```
 app_mapa_campo/
-├── dist/MapaDeCampo-1.5.0.apk     APK firmado (v2 + v3)
+├── dist/MapaDeCampo-1.5.1.apk     APK firmado (v2 + v3)
 ├── web/                           motor de mapas (OpenLayers 10.11 + geotiff.js + proj4js)
 │   ├── src/crs.js                 SRC y plano local Transverso de Mercator
 │   ├── src/geodesy.js             inverso de Vincenty, formatos de coordenadas
